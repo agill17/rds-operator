@@ -96,18 +96,16 @@ func (r *ReconcileDBInstance) Reconcile(request reconcile.Request) (reconcile.Re
 	dbID := lib.SetDBID(ns, crName)
 	user, pass := lib.GetUsernamePassword(instance)
 
-	if err := r.createDbInstanceIfNotExists(instance, dbID, ns, request); err != nil {
+	if err := r.createInstanceAndUpdateState(instance, dbID, ns, request); err != nil {
 		logrus.Errorf("Namespace: %v | DB Instance ID: %v | Msg: Something went wrong when creating db instance: %v", instance.Namespace, dbID, err)
 		return reconcile.Result{}, err
-	} else if err == nil {
-		if instance.Status.DeployedInitially {
-			if err := r.createInitDBJob(instance, request); err != nil {
-				logrus.Errorf("Namespace: %v | DB Instance ID: %v | Msg: Something went wrong when creating init-db job: %v", instance.Namespace, dbID, err)
-				return reconcile.Result{}, err
-			}
-			r.createExternalNameSvc(instance, dbID, request)
-			r.createSecret(instance, dbID, instance.Spec.DBName, user, pass, request)
+	} else if instance.Status.DeployedInitially {
+		if err := r.createInitDBJob(instance, request); err != nil {
+			logrus.Errorf("Namespace: %v | DB Instance ID: %v | Msg: Something went wrong when creating init-db job: %v", instance.Namespace, dbID, err)
+			return reconcile.Result{}, err
 		}
+		r.createExternalNameSvc(instance, dbID, request)
+		r.createSecret(instance, dbID, instance.Spec.DBName, user, pass, request)
 	}
 
 	return reconcile.Result{Requeue: true, RequeueAfter: 1 * time.Second}, nil
@@ -123,4 +121,39 @@ func (r *ReconcileDBInstance) getCrInstance(request reconcile.Request) (*agillv1
 	}
 	return cr, err
 
+}
+
+/*
+	Cases to handle:
+	1. DB exists in AWS AND CR has no status about it -- dont do anything but just log that msg
+	2. DB does not exist in AWS AND CR has no status about any deployment -- create a new fresh DB
+	3. DB does not exist in AWS AND CR has status that it was deployed atleast once -- reheal from snapshot if defined to do so, notify
+	4. DB does exists in AWS AND CR has status about it -- dont do anything but just log that msg
+*/
+func (r *ReconcileDBInstance) createInstanceAndUpdateState(cr *agillv1alpha1.DBInstance, dbID, ns string, request reconcile.Request) error {
+	var err error
+
+	dbInput := r.createDBInstanceInput(cr, dbID)
+	dbExistsInAws, _ := r.dbInstanceExists(dbID)
+	crHasStatus := crHasDBStatus(cr)
+
+	if dbExistsInAws && !crHasStatus {
+		// 1.
+		logrus.Errorf("Namespace: %v | DB Identifier: %v | Msg: dbID already exists in AWS! Please create a new DB by updating the name under metadata of the cr", cr.Namespace, dbID)
+	} else if !dbExistsInAws && !crHasStatus {
+		// 2.
+		if _, err := r.createNewDBInstance(cr, dbID, dbInput, request); err != nil {
+			return err
+		}
+	} else if !dbExistsInAws && crHasStatus {
+		// 3.
+		logrus.Errorf("Namespace: %v | DB Identifier: %v | Msg: CR is marked as db is deployed but does not exist in AWS!!!", cr.Namespace, dbID)
+		if err := r.restoreFromSnapshot(cr, dbID, request); err != nil {
+			return err
+		}
+	} else if dbExistsInAws && crHasStatus {
+		// 4.
+		logrus.Infof("Namespace: %v | DB Identifier: %v | Msg: CR has DB marked as deployed and also exists in aws", cr.Namespace, dbID)
+	}
+	return err
 }

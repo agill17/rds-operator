@@ -27,14 +27,16 @@ type DBClusterSpec struct {
 	StorageEncrypted            bool         `json:"storageEncrypted"`
 	VpcSecurityGroupIds         []string     `json:"vpcSecurityGroupIds"`
 	DeletePolicy                DeletePolicy `json:"deletePolicy"`
+	RehealFromLatestSnapshot    bool         `json:"rehealFromLatestSnapshot"`
 }
 
 // DBClusterStatus defines the observed state of DBCluster
 type DBClusterStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
-	Created          bool                          `json:"created"`
-	RDSClusterStatus *rds.DescribeDBClustersOutput `json:"rdsClusterStatus"`
+	Created              bool                          `json:"created"`
+	RehealedFromSnapshot string                        `json:"rehealedFromSnapshot"`
+	RDSClusterStatus     *rds.DescribeDBClustersOutput `json:"rdsClusterStatus"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

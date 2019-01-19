@@ -9,7 +9,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/rds"
 	"github.com/sirupsen/logrus"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
@@ -42,32 +41,47 @@ func (r *ReconcileDBCluster) deleteCluster(cr agillv1alpha1.DBCluster, dbID stri
 	return err
 }
 
-func (r *ReconcileDBCluster) createCluster(cr *agillv1alpha1.DBCluster, dbID string, request reconcile.Request) error {
+func (r *ReconcileDBCluster) createCluster(cr *agillv1alpha1.DBCluster, dbID string, request reconcile.Request) (*rds.DescribeDBClustersOutput, error) {
+	var err error
+	var dbClusterOutput *rds.DescribeDBClustersOutput
 	if exists, _ := r.dbClusterExists(dbID); !exists {
 		logrus.Infof("Creating db cluster first")
 		input := getCreateDBClusterInput(cr, dbID)
-		_, err := r.rdsClient.CreateDBCluster(input)
+		_, err = r.rdsClient.CreateDBCluster(input)
 		if err != nil {
 			logrus.Errorf("ERROR while creating DB Cluster%v:", err)
 			spew.Dump(cr)
-			return err
+			return nil, err
 		}
-
-		instance := &agillv1alpha1.DBCluster{}
-		err = r.client.Get(context.TODO(), request.NamespacedName, instance)
-		if err != nil {
-			if errors.IsNotFound(err) {
-				return nil
-			}
-			return err
-		}
-		_, output := r.dbClusterExists(dbID)
-		instance.Status.RDSClusterStatus = output
-		instance.Status.Created = true
-		if err := r.client.Update(context.TODO(), instance); err != nil {
-			return err
-		}
-
 	}
-	return nil
+	_, dbClusterOutput = r.dbClusterExists(dbID)
+
+	return dbClusterOutput, err
+}
+
+func (r *ReconcileDBCluster) createItAndUpdateState(id string, request reconcile.Request) error {
+	instance := &agillv1alpha1.DBCluster{}
+	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
+	if err != nil {
+		return err
+	}
+
+	output, err := r.createCluster(instance, id, request)
+	if err != nil {
+		logrus.Errorf("Something went wrong while creating the db cluster: %v", err)
+		return err
+	}
+	instance.Status.Created = true
+	instance.Status.RDSClusterStatus = output
+
+	logrus.Infof("COMMON AND STATE FROM DBCLUSTER")
+	spew.Dump(instance)
+	err = r.client.Update(context.TODO(), instance)
+	if err != nil {
+		logrus.Warnf("Failed to update cluster status: %v", err)
+		return err
+	}
+	spew.Dump()
+	return err
+
 }

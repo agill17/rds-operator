@@ -86,8 +86,6 @@ type ReconcileDBCluster struct {
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
 func (r *ReconcileDBCluster) Reconcile(request reconcile.Request) (reconcile.Result, error) {
-	// reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
-	// reqLogger.Info("Reconciling DBCluster")
 
 	// Fetch the DBCluster instance
 	instance := &agillv1alpha1.DBCluster{}
@@ -100,10 +98,27 @@ func (r *ReconcileDBCluster) Reconcile(request reconcile.Request) (reconcile.Res
 		// Error reading the object - requeue the request.
 		return reconcile.Result{}, err
 	}
+	id := lib.SetDBID(instance.Namespace, instance.Name)
 	r.rdsClient = lib.GetRdsClient()
-	if !instance.Status.Created {
-		r.createCluster(instance, lib.SetDBID(instance.Namespace, instance.Name), request)
 
+	// if not created -- create it and update status
+	// if operator restarts -- this will run again but wont do anything if rds cluster already exists, finally update status
+	if !instance.Status.Created {
+		logrus.Infof("INIT Create cluster request")
+		err := r.createItAndUpdateState(id, request)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+	}
+
+	// recreateIt will be set by DBInstance whenever needed ( incase dbInstance is trying to reheal and was part of the cluster )
+	exists, _ := r.dbClusterExists(id)
+	if !exists && instance.Spec.RehealFromLatestSnapshot {
+		snapID, _ := lib.GetLatestClusterSnapID(id, instance.Namespace, "us-east-1")
+		if snapID != "" {
+			logrus.Infof("Recreate cluster requested....")
+			r.restoreClusterFromSnap(request, id, snapID)
+		}
 	}
 	return reconcile.Result{Requeue: true, RequeueAfter: 1 * time.Second}, nil
 }
