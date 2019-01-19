@@ -24,7 +24,7 @@
 - Aurora-MySQL
 # Todos
  - Cleanup
- - Add DBSubnetGroup kind
+ - Add DBSubnetGroup controller
  - Support more db engines
 
 
