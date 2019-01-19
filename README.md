@@ -18,7 +18,7 @@
 # Features;
   - RDS DB Provisioning
   - Pre-Populate provisioned DB ( *optional* )
-  - Reheal from latest available snapshot when deleted from console ( *optional* )
+  - Reheal from latest available snapshot when DB no longer exists in AWS ( *optional* )
 # Supported DB Engines
 - MySQL
 - Aurora-MySQL
