@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: test
+---
+apiVersion: agill.apps/v1alpha1
+kind: DBCluster
+metadata:
+  name: aurora-cluster
+  namespace: test
+  ## dbClusterId is created by joining namespace-name
+  ## so dbClusterId will "amrit-aurora-cluster"
+spec:
+  azs: 
+    - us-east-1a
+    - us-east-1b
+  backupRetentionPeriod: 1
+  dBSubnetGroupName: 
+  dbName: mydb
+  deletionProtection: false
+  engine: "aurora-mysql"
+  engineMode: "provisioned"
+  engineVersion: 5.7.12
+  masterUsername: root
+  masterPassword: password
+  storageEncrypted: false
+  
+---
+apiVersion: agill.apps/v1alpha1
+kind: DBInstance
+metadata:
+  name: mysql-instance
+  namespace: test
+  ## dbInstanceId is created by joining namespace-name
+  ## so db instance id will be amrit-mysql-instance
+spec:
+  az: us-east-1b
+  engine: "aurora-mysql"
+  ## clusterID gets set by DBCluster kind ( metadata.namespace-metadata.name -- aka "amrit-aurora-cluster" )
+  dbClusterId: "test-aurora-cluster"
+  engineVersion: 5.7.12
+  autoMinorVersionUpgrade: false
+  dbInstanceClass: db.t2.small
+  publiclyAccessible: true
+  dBSecurityGroups: []
+  rehealFromLatestSnapshot: true
+  dbSecretName: rds-db-secret
+  externalSvcName: rds-endpoint
+  masterUsername: root
+  masterPassword: password
+  deletePolicy:
+    deleteAutomatedBackups: true
+    skipFinalSnapshot: true
+  initDBJob:
+    waitTillCompleted: true
+    timeout: 100 ## secs
+    image: agill17/mysqltest
+    sqlFile: "/docker-entrypoint-initdb.d/test.sql"
+
+
+    

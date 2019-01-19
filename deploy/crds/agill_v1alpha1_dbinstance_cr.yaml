@@ -1,0 +1,7 @@
+apiVersion: agill.apps/v1alpha1
+kind: DBInstance
+metadata:
+  name: example-dbinstance
+spec:
+  # Add fields here
+  size: 3

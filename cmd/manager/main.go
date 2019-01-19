@@ -9,10 +9,10 @@ import (
 
 	"github.com/agill17/rds-operator/pkg/apis"
 	"github.com/agill17/rds-operator/pkg/controller"
-	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	"github.com/operator-framework/operator-sdk/pkg/leader"
 	"github.com/operator-framework/operator-sdk/pkg/ready"
 	sdkVersion "github.com/operator-framework/operator-sdk/version"
+	"github.com/sirupsen/logrus"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -27,6 +27,18 @@ func printVersion() {
 	log.Info(fmt.Sprintf("Go OS/Arch: %s/%s", runtime.GOOS, runtime.GOARCH))
 	log.Info(fmt.Sprintf("operator-sdk Version: %v", sdkVersion.Version))
 }
+func getAwsCreds() (string, string) {
+	return os.Getenv("AWS_ACCESS_KEY_ID"), os.Getenv("AWS_SECRET_ACCESS_KEY")
+}
+
+func ensureCredsAreDefined() {
+	access, secret := getAwsCreds()
+	if access == "" || secret == "" {
+		logrus.Errorf("Operator cannot find aws creds, please create a secret and deploy the secret with aws credentials in the same namespace as the operator")
+		logrus.Errorf("Secret name must be rds-access-creds and it must contain AWS_ACCESS and AWS_SECRET")
+		panic(fmt.Sprint("Missing rds-access-creds secret in the operator namespace"))
+	}
+}
 
 func main() {
 	flag.Parse()
@@ -39,11 +51,11 @@ func main() {
 
 	printVersion()
 
-	namespace, err := k8sutil.GetWatchNamespace()
-	if err != nil {
-		log.Error(err, "failed to get watch namespace")
-		os.Exit(1)
-	}
+	// namespace, err := k8sutil.GetWatchNamespace()
+	// if err != nil {
+	// 	log.Error(err, "failed to get watch namespace")
+	// 	os.Exit(1)
+	// }
 
 	// Get a config to talk to the apiserver
 	cfg, err := config.GetConfig()
@@ -64,7 +76,7 @@ func main() {
 	defer r.Unset()
 
 	// Create a new Cmd to provide shared dependencies and start components
-	mgr, err := manager.New(cfg, manager.Options{Namespace: namespace})
+	mgr, err := manager.New(cfg, manager.Options{Namespace: ""})
 	if err != nil {
 		log.Error(err, "")
 		os.Exit(1)

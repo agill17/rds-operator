@@ -1,0 +1,180 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: rds-operator
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: rds-operator
+  namespace: rds-operator
+
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: dbclusters.agill.apps
+  namespace: rds-operator
+spec:
+  group: agill.apps
+  names:
+    kind: DBCluster
+    listKind: DBClusterList
+    plural: dbclusters
+    singular: dbcluster
+  scope: Namespaced
+  version: v1alpha1
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: dbinstances.agill.apps
+  namespace: rds-operator
+spec:
+  group: agill.apps
+  names:
+    kind: DBInstance
+    listKind: DBInstanceList
+    plural: dbinstances
+    singular: dbinstance
+  scope: Namespaced
+  version: v1alpha1
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: null
+  name: rds-operator
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  - services
+  - endpoints
+  - persistentvolumeclaims
+  - events
+  - configmaps
+  - secrets
+  verbs:
+  - get
+  - watch
+  - create
+  - delete
+  - update
+- apiGroups:
+  - batch
+  resources:
+  - jobs
+  verbs:
+  - get
+  - watch
+  - create
+  - delete
+  - update
+- apiGroups:
+  - apps
+  resources:
+  - statefulsets
+  - secrets
+  verbs:
+  - get
+  - create
+  - delete
+  - update
+- apiGroups:
+  - monitoring.coreos.com
+  resources:
+  - servicemonitors
+  verbs:
+  - get
+  - create
+- apiGroups:
+  - agill.apps
+  resources:
+  - "*"
+  - dbclusters
+  - dbinstances
+  verbs:
+  - "*"
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: rds-operator
+  namespace: rds-operator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- kind: ServiceAccount
+  name: rds-operator
+  namespace: rds-operator
+---
+apiVersion: v1
+kind: Secret
+metadata: 
+  name: rds-access-creds
+  namespace: rds-operator
+type: Opaque
+data:
+  AWS_ACCESS: QUtJQUpYU1o0QVZSU1ZQWlM3TFE=
+  AWS_SECRET: dFFpbGZabGhDUVZGQ1BIMVhBd2tFTThCMFdyYjJ1SFowYWRUOTM5Vg==
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rds-operator
+  namespace: rds-operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: rds-operator
+  template:
+    metadata:
+      labels:
+        name: rds-operator
+    spec:
+      serviceAccountName: rds-operator
+      containers:
+        - name: rds-operator
+          # Replace this with the built image name
+          image: agill17/rds-operator:0.2.0
+          ports:
+          - containerPort: 60000
+            name: metrics
+          command:
+          - rds-operator
+          imagePullPolicy: Always
+          readinessProbe:
+            exec:
+              command:
+                - stat
+                - /tmp/operator-sdk-ready
+            initialDelaySeconds: 4
+            periodSeconds: 10
+            failureThreshold: 1
+          env:
+            - name: WATCH_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: OPERATOR_NAME
+              value: "rds-operator"
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom: 
+                secretKeyRef:
+                  name: "rds-access-creds"
+                  key: "AWS_ACCESS"
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: "rds-access-creds"
+                  key: "AWS_SECRET"
+
