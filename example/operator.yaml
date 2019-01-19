@@ -119,8 +119,8 @@ metadata:
   namespace: rds-operator
 type: Opaque
 data:
-  AWS_ACCESS: QUtJQUpYU1o0QVZSU1ZQWlM3TFE=
-  AWS_SECRET: dFFpbGZabGhDUVZGQ1BIMVhBd2tFTThCMFdyYjJ1SFowYWRUOTM5Vg==
+  AWS_ACCESS: yourKey
+  AWS_SECRET: yourKey
 ---
 apiVersion: apps/v1
 kind: Deployment
