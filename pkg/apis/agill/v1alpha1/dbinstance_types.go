@@ -52,6 +52,7 @@ type DBInstanceStatus struct {
 	InitJobSuccessfull       bool                           `json:"initJobSuccessfull"`
 }
 
+//
 type InitDBJob struct {
 	Image             string            `json:"image"`
 	WaitTillCompleted bool              `json:"waitTillCompleted"`
