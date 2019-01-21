@@ -190,13 +190,3 @@ func (r *ReconcileDBInstance) createInstanceAndUpdateState(cr *agillv1alpha1.DBI
 	}
 	return err
 }
-
-// Contains verifies if a list of strings contains a given string
-func Contains(l []string, s string) bool {
-	for _, elem := range l {
-		if elem == s {
-			return true
-		}
-	}
-	return false
-}
