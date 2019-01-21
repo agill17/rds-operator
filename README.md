@@ -3,7 +3,7 @@
 # Installation
 ##### Note: The operator requires AWS Creds to be passed in as env variables ( could be passed from secrets )
 
-1.  *Operator.yaml*
+1.  *Operator.yaml* ( AWS Creds go in here as env vars )
     ```
     $ kubectl apply -f example/operator.yaml
     ```
@@ -19,6 +19,7 @@
   - RDS DB Provisioning
   - Pre-Populate provisioned DB ( *optional* )
   - Reheal from latest available snapshot when DB no longer exists in AWS ( *optional* )
+  - Cleans up AWS resources when CR/Namespace is deleted
 # Supported DB Engines
 - MySQL
 - Aurora-MySQL
