@@ -23,7 +23,6 @@
 - MySQL
 - Aurora-MySQL
 # Todos
- - Cleanup
  - Add DBSubnetGroup controller
  - Support more db engines
 
