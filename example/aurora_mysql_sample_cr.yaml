@@ -1,14 +1,14 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: test
+  name: amrit
 ---
 ## currently only works with aurora-mysql
 apiVersion: agill.apps/v1alpha1
 kind: DBCluster
 metadata:
   name: aurora-cluster
-  namespace: test
+  namespace: amrit
   ## dbClusterId is created by joining namespace-name
   ## so dbClusterId will "amrit-aurora-cluster"
 spec:
@@ -32,22 +32,20 @@ apiVersion: agill.apps/v1alpha1
 kind: DBInstance
 metadata:
   name: mysql-instance
-  namespace: test
+  namespace: amrit
   ## dbInstanceId is created by joining namespace-name
   ## so db instance id will be amrit-mysql-instance
 spec:
-  az: us-east-1c
+  az: us-east-1a
   engine: "aurora-mysql"
   ## clusterID gets set by DBCluster kind ( metadata.namespace-metadata.name -- aka "amrit-aurora-cluster" )
-  dbClusterId: "test-aurora-cluster"
+  dbClusterId: "amrit-aurora-cluster"
   engineVersion: 5.7.12
   autoMinorVersionUpgrade: false
   dbInstanceClass: db.t2.small
   publiclyAccessible: true
   dBSecurityGroups: []
-  ##  -- does not apply here when engine is aurora-mysql ( please set the reheal policy in DBCluster.Spec instead )
-  ##  -- ONLY applies when engine is mysql
-  # rehealFromLatestSnapshot: true
+  rehealFromLatestSnapshot: true
   dbSecretName: rds-db-secret
   externalSvcName: rds-endpoint
   masterUsername: root
