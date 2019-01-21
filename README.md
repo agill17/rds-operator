@@ -19,6 +19,7 @@
   - RDS DB Provisioning
   - Pre-Populate provisioned DB ( *optional* )
   - Reheal from latest available snapshot when DB no longer exists in AWS ( *optional* )
+  - Cleans up AWS resources when CR/Namespace is deleted
 # Supported DB Engines
 - MySQL
 - Aurora-MySQL
