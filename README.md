@@ -15,6 +15,10 @@
     ```
     $ kubectl apply -f example/aurora_mysql_sample_cr.yaml
     ```
+3. *Get Installed CR's*
+    ```
+    $ kubectl get dbInstances --all-namespaces
+    $ kubectl get dbClusters --all-namespaces
 # Features;
   - RDS DB Provisioning
   - Pre-Populate provisioned DB ( *optional* )
