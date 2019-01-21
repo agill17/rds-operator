@@ -3,7 +3,7 @@
 # Installation
 ##### Note: The operator requires AWS Creds to be passed in as env variables ( could be passed from secrets )
 
-1.  *Operator.yaml*
+1.  *Operator.yaml* ( AWS Creds go in here as env vars )
     ```
     $ kubectl apply -f example/operator.yaml
     ```
