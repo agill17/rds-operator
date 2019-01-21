@@ -87,7 +87,6 @@ type ReconcileDBCluster struct {
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
 func (r *ReconcileDBCluster) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 
-	// Fetch the DBCluster instance
 	instance := &agillv1alpha1.DBCluster{}
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
@@ -95,14 +94,44 @@ func (r *ReconcileDBCluster) Reconcile(request reconcile.Request) (reconcile.Res
 			logrus.Errorf("Could not find cluster spec: %v", err)
 			return reconcile.Result{}, nil
 		}
-		// Error reading the object - requeue the request.
 		return reconcile.Result{}, err
 	}
 	id := lib.SetDBID(instance.Namespace, instance.Name)
 	r.rdsClient = lib.GetRdsClient()
 
-	// if not created -- create it and update status
-	// if operator restarts -- this will run again but wont do anything if rds cluster already exists, finally update status
+	// get finalizers
+	deletionTimeExists := instance.GetDeletionTimestamp() != nil
+	currentFinalizers := instance.GetFinalizers()
+	anyFinalizersExists := len(currentFinalizers) > 0
+
+	// set finalizers
+	if !anyFinalizersExists && !deletionTimeExists {
+		finalizersToAdd := append(currentFinalizers, lib.DBClusterFinalizer)
+		instance.SetFinalizers(finalizersToAdd)
+		err := r.client.Update(context.TODO(), instance)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+	}
+
+	if deletionTimeExists && anyFinalizersExists {
+		// delete cluster
+		err := r.deleteCluster(instance, id)
+		if err != nil {
+			logrus.Errorf("Something went wrong while deleting the dbCluster: %v", err)
+			return reconcile.Result{}, err
+		}
+		// empty out the finalizers list
+		instance.SetFinalizers([]string{})
+		err = r.client.Update(context.TODO(), instance)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+		// do not reque
+		return reconcile.Result{}, nil
+	}
+
+	// create
 	if !instance.Status.Created {
 		logrus.Infof("INIT Create cluster request")
 		err := r.createItAndUpdateState(id, request)

@@ -23,7 +23,7 @@ func (r *ReconcileDBInstance) restoreFromSnapshot(cr *agillv1alpha1.DBInstance, 
 
 	logrus.Warnf("Namespace: %v | DB Identifier: %v | Msg: re-creating new rds instance from latest available snapshot available", cr.Namespace, dbID)
 	// if this was a cluster ( let cluster controller re-create it )
-	if instance.Spec.DBClusterIdentifier != "" {
+	if instance.Spec.DBClusterIdentifier != "" && instance.Spec.RehealFromLatestSnapshot {
 		if _, err := r.createNewDBInstance(instance, dbID, r.createDBInstanceInput(instance, dbID), request); err != nil {
 			logrus.Errorf("ERROR while creating new instance as part of cluster reheal policy: %v", err)
 			return err
@@ -37,13 +37,6 @@ func (r *ReconcileDBInstance) restoreFromSnapshot(cr *agillv1alpha1.DBInstance, 
 		}
 	}
 	lib.WaitForExistence("available", dbID, cr.Namespace, r.rdsClient)
-	_, cr.Status.RDSInstanceStatus = r.dbInstanceExists(dbID)
-	instance.Status.RestoredFromSnapshotName = snapID
-	instance.Status.UpdateKubeFiles = true
-	if err := r.client.Update(context.TODO(), instance); err != nil {
-		logrus.Errorf("ERROR while updating cr status from instance controller after a restore from snapshot: %v", err)
-		return err
-	}
 
 	return err
 }

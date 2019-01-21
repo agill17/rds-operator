@@ -90,12 +90,45 @@ func (r *ReconcileDBInstance) Reconcile(request reconcile.Request) (reconcile.Re
 		return reconcile.Result{}, err
 	}
 
+	// set some vars
 	r.rdsClient = lib.GetRdsClient()
 	ns := instance.Namespace
 	crName := instance.Name
 	dbID := lib.SetDBID(ns, crName)
 	user, pass := lib.GetUsernamePassword(instance)
 
+	// get finalizers
+	deletionTimeExists := instance.GetDeletionTimestamp() != nil
+	currentFinalizers := instance.GetFinalizers()
+	anyFinalizersExists := len(currentFinalizers) > 0
+
+	// set finalizers ( so controller can cleanup during delete events )
+	if !anyFinalizersExists && !deletionTimeExists {
+		finalizersToAdd := append(currentFinalizers, lib.DBInstanceFinalizer)
+		instance.SetFinalizers(finalizersToAdd)
+		err := r.client.Update(context.TODO(), instance)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+	}
+
+	// delete dbInstance -- if successful -- empty out the finalizers -- do not reque
+	if deletionTimeExists && anyFinalizersExists {
+		logrus.Warnf("reconcile: time to delete %s", instance.Name)
+		err := r.deleteDBInstance(instance, dbID)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+		instance.SetFinalizers([]string{})
+		err = r.client.Update(context.TODO(), instance)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+		logrus.Infof("Current finalizers after cleanup: %v", instance.GetFinalizers())
+		return reconcile.Result{}, nil
+	}
+
+	// create
 	if err := r.createInstanceAndUpdateState(instance, dbID, ns, request); err != nil {
 		logrus.Errorf("Namespace: %v | DB Instance ID: %v | Msg: Something went wrong when creating db instance: %v", instance.Namespace, dbID, err)
 		return reconcile.Result{}, err
@@ -153,7 +186,17 @@ func (r *ReconcileDBInstance) createInstanceAndUpdateState(cr *agillv1alpha1.DBI
 		}
 	} else if dbExistsInAws && crHasStatus {
 		// 4.
-		logrus.Infof("Namespace: %v | DB Identifier: %v | Msg: CR has DB marked as deployed and also exists in aws", cr.Namespace, dbID)
+		// logrus.Infof("Namespace: %v | DB Identifier: %v | Msg: CR has DB marked as deployed and also exists in aws", cr.Namespace, dbID)
 	}
 	return err
+}
+
+// Contains verifies if a list of strings contains a given string
+func Contains(l []string, s string) bool {
+	for _, elem := range l {
+		if elem == s {
+			return true
+		}
+	}
+	return false
 }

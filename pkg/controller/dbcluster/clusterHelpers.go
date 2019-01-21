@@ -24,23 +24,6 @@ func (r *ReconcileDBCluster) dbClusterExists(dbClusterID string) (bool, *rds.Des
 	return exists, output
 }
 
-func (r *ReconcileDBCluster) deleteCluster(cr agillv1alpha1.DBCluster, dbID string) error {
-	var err error
-
-	if exists, _ := r.dbClusterExists(dbID); exists {
-		if _, err = r.rdsClient.DeleteDBCluster(&rds.DeleteDBClusterInput{
-			DBClusterIdentifier: &dbID,
-			SkipFinalSnapshot:   &cr.Spec.DeletePolicy.SkipFinalSnapshot,
-		}); err != nil {
-			logrus.Errorf("ERROR deleting cluster: %v", err)
-			return err
-		}
-
-	}
-
-	return err
-}
-
 func (r *ReconcileDBCluster) createCluster(cr *agillv1alpha1.DBCluster, dbID string, request reconcile.Request) (*rds.DescribeDBClustersOutput, error) {
 	var err error
 	var dbClusterOutput *rds.DescribeDBClustersOutput

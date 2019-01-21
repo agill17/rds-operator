@@ -14,6 +14,8 @@ const (
 	DefaultStorageSize     int64 = 10
 	DefaultSubnetGroupName       = "default"
 	DefaultTimeoutForJob         = 300
+	DBClusterFinalizer           = "agill.apps.dbCluster"
+	DBInstanceFinalizer          = "agill.apps.dbInstance"
 )
 
 // use for cluster and instance specs
