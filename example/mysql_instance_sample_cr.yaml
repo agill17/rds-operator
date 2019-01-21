@@ -29,9 +29,14 @@ spec:
   deletePolicy:
     deleteAutomatedBackups: true
     skipFinalSnapshot: true
+  ## Optional
   initDBJob:
     waitTillCompleted: true
     timeout: 100 ## secs
     image: agill17/mysqltest
     sqlFile: "/docker-entrypoint-initdb.d/test.sql"
+    ## Optional 
+    # nodeSelector:
+    #     key: val
+    # imagePullSecret: yourSecretNameToUse
     
