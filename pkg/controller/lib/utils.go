@@ -69,3 +69,13 @@ func GetImportJobCmd(dbEngine, dbName, username, password, endpoint, sqlFile str
 	// }
 	return []string{"sh", "-c", actualCmd}
 }
+
+func GetTags(metaLabels map[string]string) []*rds.Tag {
+	var tags []*rds.Tag
+
+	for k, v := range metaLabels {
+		tags = append(tags, &rds.Tag{Key: &k, Value: &v})
+	}
+
+	return tags
+}

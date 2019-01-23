@@ -95,6 +95,7 @@ rules:
   - "*"
   - dbclusters
   - dbinstances
+  - dbsubnetgroups
   verbs:
   - "*"
 ---

@@ -3,7 +3,19 @@ kind: Namespace
 metadata:
   name: amrit
 ---
-## currently only works with aurora-mysql
+apiVersion: agill.apps/v1alpha1
+kind: DBSubnetGroupName
+metadata:
+  name: mysubnet-group ## will become the name of the subnet group
+  namespace: amrit
+  labels:
+    app: database ## used for tags in AWs
+spec:
+  subnetGroups: 
+    - id1
+    - id2
+  
+---
 apiVersion: agill.apps/v1alpha1
 kind: DBCluster
 metadata:

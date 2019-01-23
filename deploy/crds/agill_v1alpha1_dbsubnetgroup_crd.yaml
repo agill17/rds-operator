@@ -1,0 +1,15 @@
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: dbsubnetgroups.agill.apps
+spec:
+  group: agill.apps
+  names:
+    kind: DBSubnetGroup
+    listKind: DBSubnetGroupList
+    plural: dbsubnetgroups
+    singular: dbsubnetgroup
+  scope: Namespaced
+  version: v1alpha1
+  subresources:
+    status: {}
