@@ -1,8 +1,9 @@
 
 # RDS-Operator
 # Installation
-##### Note: The operator requires AWS Creds to be passed in as env variables ( could be passed from secrets ) OR 
-#####       the operator pod must be ran on a node that has an IAM role with priviliges to RDS attached.
+##### Note: The operator requires AWS Creds to be passed in as env variables ( could be passed from secrets ) 
+##### OR 
+##### the operator pod must be ran on a node that has an IAM role with priviliges to RDS attached.
 
 1.  *Operator.yaml* ( AWS Creds go in here as env vars )
     ```
