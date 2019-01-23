@@ -34,9 +34,9 @@ func getAwsCreds() (string, string) {
 func ensureCredsAreDefined() {
 	access, secret := getAwsCreds()
 	if access == "" || secret == "" {
-		logrus.Errorf("Operator cannot find aws creds, please create a secret and deploy the secret with aws credentials in the same namespace as the operator")
-		logrus.Errorf("Secret name must be rds-access-creds and it must contain AWS_ACCESS and AWS_SECRET")
-		panic(fmt.Sprint("Missing rds-access-creds secret in the operator namespace"))
+		logrus.Warnf("Operator cannot find aws creds, please create a secret and deploy the secret with aws credentials in the same namespace as the operator")
+		logrus.Warnf("Secret name must be rds-access-creds and it must contain AWS_ACCESS and AWS_SECRET")
+		logrus.Warnf("Assuming your node has an IAM role with enough access to create/update/delete rds instances")
 	}
 }
 
