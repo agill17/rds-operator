@@ -29,7 +29,8 @@
 - MySQL
 - Aurora-MySQL
 # Todos
- - Add DBSubnetGroup controller
+ - Add DBSParameterGroup controller
+ - Handle modifications of CR's
  - Support more db engines
 
 
