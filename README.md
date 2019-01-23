@@ -20,7 +20,8 @@
     $ kubectl get dbInstances --all-namespaces
     $ kubectl get dbClusters --all-namespaces
 # Features;
-  - RDS DB Provisioning
+  - RDS DB Provisioning ( Instance + Cluster -- Separate kinds for each )
+  - RDS DB Subnet Group Creation ( Separate kind )
   - Pre-Populate provisioned DB ( *optional* )
   - Reheal from latest available snapshot when DB no longer exists in AWS ( *optional* )
   - Cleans up AWS resources when CR/Namespace is deleted
@@ -28,7 +29,8 @@
 - MySQL
 - Aurora-MySQL
 # Todos
- - Add DBSubnetGroup controller
+ - Add DBSParameterGroup controller
+ - Handle modifications of a deployed CR's ( Update )
  - Support more db engines
 
 
