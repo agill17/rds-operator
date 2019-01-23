@@ -30,7 +30,7 @@
 - Aurora-MySQL
 # Todos
  - Add DBSParameterGroup controller
- - Handle modifications of CR's
+ - Handle modifications of a deployed CR's ( Update )
  - Support more db engines
 
 
