@@ -24,7 +24,7 @@
 # Features;
   - RDS DB Provisioning ( Instance + Cluster -- Separate kinds for each )
   - RDS DB Subnet Group Creation ( Separate kind )
-  - Pre-Populate provisioned DB ( *optional* )
+  - Pre-Populate/Initialize provisioned DB ( *optional* )
   - Reheal from latest available snapshot when DB no longer exists in AWS ( *optional* )
   - Cleans up AWS resources when CR/Namespace is deleted
 # Supported DB Engines
