@@ -30,8 +30,9 @@
 # Supported DB Engines
 - MySQL
 - Aurora-MySQL
-# Todos
- - Add DBSParameterGroup controller
+# TODOS
+ - Add DBParameterGroup controller
+ - Paramterized periodic existence check per controller ( AWS Resources )
  - Handle modifications of a deployed CR's ( Update )
  - Support more db engines
 
