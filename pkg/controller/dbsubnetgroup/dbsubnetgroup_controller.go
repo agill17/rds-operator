@@ -2,6 +2,7 @@ package dbsubnetgroup
 
 import (
 	"context"
+	"time"
 
 	"github.com/agill17/rds-operator/pkg/controller/lib"
 
@@ -108,7 +109,7 @@ func (r *ReconcileDBSubnetGroup) Reconcile(request reconcile.Request) (reconcile
 
 	// set finalizers if needed
 	if !deletionTimeStampExists && !anyFinalizersExists {
-		currentFinalizers = append(currentFinalizers, "")
+		currentFinalizers = append(currentFinalizers, lib.DBSubnetGroupFinalizer)
 		instance.SetFinalizers(currentFinalizers)
 		err := r.client.Update(context.TODO(), instance)
 		if err != nil {
@@ -143,5 +144,5 @@ func (r *ReconcileDBSubnetGroup) Reconcile(request reconcile.Request) (reconcile
 		}
 	}
 
-	return reconcile.Result{}, nil
+	return reconcile.Result{Requeue: true, RequeueAfter: 1 * time.Second}, nil
 }

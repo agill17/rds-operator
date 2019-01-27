@@ -40,6 +40,22 @@ spec:
   scope: Namespaced
   version: v1alpha1
 ---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: dbsubnetgroups.agill.apps
+spec:
+  group: agill.apps
+  names:
+    kind: DBSubnetGroup
+    listKind: DBSubnetGroupList
+    plural: dbsubnetgroups
+    singular: dbsubnetgroup
+  scope: Namespaced
+  version: v1alpha1
+  subresources:
+    status: {}
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -141,8 +157,7 @@ spec:
       serviceAccountName: rds-operator
       containers:
         - name: rds-operator
-          # Replace this with the built image name
-          image: agill17/rds-operator:0.2.0
+          image: agill17/rds-operator:0.2.1
           ports:
           - containerPort: 60000
             name: metrics

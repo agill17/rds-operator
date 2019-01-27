@@ -26,6 +26,7 @@ func (r *ReconcileDBSubnetGroup) createSubnetGroup(request reconcile.Request) er
 	}
 	createInput := r.createDBSubnetGroupInput(instance)
 
+	logrus.Infof("Creating DBSubnetGroup: %v", instance.Name)
 	_, err = r.rdsClient.CreateDBSubnetGroup(createInput)
 	if err != nil {
 		logrus.Errorf("Something went wrong while creating db subnet group: %v", err)

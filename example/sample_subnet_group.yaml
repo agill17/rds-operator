@@ -1,0 +1,11 @@
+apiVersion: agill.apps/v1alpha1
+kind: DBSubnetGroup
+metadata:
+  name: aurora-subnet-group ## will become the name of the subnet group
+  namespace: amrit
+  labels:
+    app: aurora ## used for tags in AWs
+spec:
+  subnetIds: 
+    - subnet-id1
+    - subnet-id2

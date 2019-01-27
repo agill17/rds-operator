@@ -16,6 +16,7 @@ const (
 	DefaultTimeoutForJob         = 300
 	DBClusterFinalizer           = "agill.apps.dbCluster"
 	DBInstanceFinalizer          = "agill.apps.dbInstance"
+	DBSubnetGroupFinalizer       = "agill.apps.dbSubnetGroup"
 )
 
 // use for cluster and instance specs
