@@ -1,7 +1,9 @@
 
 # RDS-Operator
 # Installation
-##### Note: The operator requires AWS Creds to be passed in as env variables ( could be passed from secrets )
+##### Note: The operator requires AWS Creds to be passed in as env variables ( could be passed from secrets ) 
+##### OR 
+##### the operator pod must be ran on a node that has an IAM role with priviliges to RDS attached.
 
 1.  *Operator.yaml* ( AWS Creds go in here as env vars )
     ```
@@ -22,7 +24,7 @@
 # Features;
   - RDS DB Provisioning ( Instance + Cluster -- Separate kinds for each )
   - RDS DB Subnet Group Creation ( Separate kind )
-  - Pre-Populate provisioned DB ( *optional* )
+  - Pre-Populate/Initialize provisioned DB ( *optional* )
   - Reheal from latest available snapshot when DB no longer exists in AWS ( *optional* )
   - Cleans up AWS resources when CR/Namespace is deleted
 # Supported DB Engines
