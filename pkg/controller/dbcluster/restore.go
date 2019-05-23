@@ -4,28 +4,16 @@ import (
 	kubev1alpha1 "github.com/agill17/rds-operator/pkg/apis/agill/v1alpha1"
 	"github.com/agill17/rds-operator/pkg/lib"
 	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/service/rds"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/sirupsen/logrus"
 )
 
-func (r *ReconcileDBCluster) restoreClusterFromSnap(cr *kubev1alpha1.DBCluster, installType string) error {
+// Used when a CR was used to create a DB cluster, but that no longer exists,
+// so restore from latest available snapshot -- meaning installType must be a CREATE_INSTALL_NEW
+func (r *ReconcileDBCluster) recoverDeletedClusterFromSnapshot(cr *kubev1alpha1.DBCluster) error {
 
-	// decide which restore input and snapID to use?
-	/*
-		1. If creating a fresh one from an existing snapshot
-		2. If restoring a already deployed db by the operator then get the latest snapID
-	*/
-	var restoreInput *rds.RestoreDBClusterFromSnapshotInput
-	var snapID string
-	if installType == "newInstallFromSnapshot" {
-		restoreInput = cr.CreateFromSnapshot
-		snapID = *restoreInput.SnapshotIdentifier
-	} else if installType == "newInstall" {
-		snapID, _ = getLatestClusterSnapID(*cr.Spec.DBClusterIdentifier, cr.Namespace, cr.Region)
-		restoreInput = GetRestoreClusterDBFromSnapInput(cr, *cr.Spec.DBClusterIdentifier, snapID)
-	}
-
+	snapID, _ := getLatestClusterSnapID(*cr.Spec.DBClusterIdentifier, cr.Namespace, cr.Region)
+	restoreInput := GetRestoreClusterDBFromSnapInput(cr, *cr.Spec.DBClusterIdentifier, snapID)
 	spew.Dump(restoreInput)
 	logrus.Infof("Using snapID: %v", snapID)
 
@@ -37,7 +25,7 @@ func (r *ReconcileDBCluster) restoreClusterFromSnap(cr *kubev1alpha1.DBCluster, 
 		}
 
 		// handle restoring/creating and reconcile if still creating
-		if err := r.handlePhases(cr); err != nil {
+		if err := r.handlePhases(cr, *cr.Spec.DBClusterIdentifier); err != nil {
 			return err
 		}
 
@@ -49,6 +37,9 @@ func (r *ReconcileDBCluster) restoreClusterFromSnap(cr *kubev1alpha1.DBCluster, 
 			logrus.Errorf("Failed to update DBCluster CR status: %v", err)
 			return err
 		}
+	} else {
+		logrus.Errorf("Could not find any latest snapshot for this CR: %v to recover DBCluster", cr.Name)
 	}
 	return nil
+
 }

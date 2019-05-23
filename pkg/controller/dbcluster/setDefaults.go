@@ -9,8 +9,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func (r *ReconcileDBCluster) setUpDefaultsIfNeeded(cr *kubev1alpha1.DBCluster, installType string) error {
-	if installType == "newInstall" {
+func (r *ReconcileDBCluster) setUpDefaultsIfNeeded(cr *kubev1alpha1.DBCluster, installType lib.ClusterInstallType) error {
+	if installType == lib.CLUSTER_INSTALL_NEW {
 		if err := r.setUpCredentialsIfNeeded(cr); err != nil {
 			return err
 		}

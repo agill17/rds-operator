@@ -2,7 +2,6 @@ package dbcluster
 
 import (
 	"context"
-	"time"
 
 	"github.com/aws/aws-sdk-go/service/rds"
 	"github.com/sirupsen/logrus"
@@ -104,8 +103,9 @@ func (r *ReconcileDBCluster) Reconcile(request reconcile.Request) (reconcile.Res
 	}
 
 	// create cluster
-	if !cr.Status.Created && installType == "newInstall" {
-		err := r.createItAndUpdateState(cr)
+	if !cr.Status.Created {
+
+		err := r.createItAndUpdateState(cr, installType)
 		if err != nil {
 			switch err.(type) {
 			case *lib.ErrorResourceCreatingInProgress:
@@ -115,6 +115,7 @@ func (r *ReconcileDBCluster) Reconcile(request reconcile.Request) (reconcile.Res
 				return reconcile.Result{}, err
 			}
 		}
+
 	}
 
 	// create secret
@@ -122,11 +123,15 @@ func (r *ReconcileDBCluster) Reconcile(request reconcile.Request) (reconcile.Res
 		return reconcile.Result{}, err
 	}
 
-	// restore
+	/***
+		If DBCluster was created from CR, and was deleted from AWS,
+		Recover from snapshot
+	***/
+
+	// restore a db that was created by this CR, if there is a snapshot available
 	if cr.Status.RestoreNeeded {
 		logrus.Infof("Recreate cluster requested for namespace: %v", cr.Namespace)
-		// TODO: do type check here and surpress custom errors
-		if err := r.restoreClusterFromSnap(cr, installType); err != nil {
+		if err := r.recoverDeletedClusterFromSnapshot(cr); err != nil {
 			return reconcile.Result{}, err
 		}
 	}
@@ -134,12 +139,12 @@ func (r *ReconcileDBCluster) Reconcile(request reconcile.Request) (reconcile.Res
 	// at the end -- keep restore status up to date if RehealFromLatestSnapshot is turned on
 	// or if a cr is asking to create a fresh db from an existing snapID
 	exists, _ := lib.DbClusterExists(&lib.RDSGenerics{RDSClient: r.rdsClient, ClusterID: *cr.Spec.DBClusterIdentifier})
-	if (!exists && cr.Status.Created) || (installType == "newInstallFromSnapshot") && cr.Status.RestoredFromSnapshotName == "" {
+	if !exists && cr.Status.Created {
 		cr.Status.RestoreNeeded = true
 		if err := r.updateCrStats(cr); err != nil {
 			return reconcile.Result{}, err
 		}
 	}
 
-	return reconcile.Result{Requeue: true, RequeueAfter: 1 * time.Second}, nil
+	return reconcile.Result{Requeue: true}, nil
 }

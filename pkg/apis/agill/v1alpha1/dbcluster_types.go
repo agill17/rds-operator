@@ -22,9 +22,8 @@ type DBClusterStatus struct {
 // DBCluster is the Schema for the dbclusters API
 // +k8s:openapi-gen=true
 type DBCluster struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-
+	metav1.TypeMeta    `json:",inline"`
+	metav1.ObjectMeta  `json:"metadata,omitempty"`
 	Spec               *rds.CreateDBClusterInput              `json:"createClusterSpec"`
 	CreateFromSnapshot *rds.RestoreDBClusterFromSnapshotInput `json:"createFromSnapshot"`
 	DeleteSpec         *rds.DeleteDBClusterInput              `json:"deleteClusterSpec,required"`

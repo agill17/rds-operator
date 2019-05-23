@@ -87,3 +87,14 @@ func restoreInstanceInput(cr *kubev1alpha1.DBInstance) *rds.RestoreDBInstanceFro
 	return restoreDBInput
 
 }
+
+func (r *ReconcileDBInstance) restoreFromSnap(cr *kubev1alpha1.DBInstance) (*rds.RestoreDBInstanceFromDBSnapshotOutput, error) {
+	var err error
+	var out *rds.RestoreDBInstanceFromDBSnapshotOutput
+
+	if out, err = r.rdsClient.RestoreDBInstanceFromDBSnapshot(cr.RestoreFromSnap); err != nil {
+		logrus.Errorf("Error while creating a new db instance from snapshot input ~~~> ", err)
+		return nil, err
+	}
+	return out, nil
+}
