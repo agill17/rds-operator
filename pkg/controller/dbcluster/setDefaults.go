@@ -9,11 +9,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func (r *ReconcileDBCluster) setUpDefaultsIfNeeded(cr *kubev1alpha1.DBCluster, installType lib.ClusterInstallType) error {
-	if installType == lib.CLUSTER_INSTALL_NEW {
-		if err := r.setUpCredentialsIfNeeded(cr); err != nil {
-			return err
-		}
+func (r *ReconcileDBCluster) setUpDefaultsIfNeeded(cr *kubev1alpha1.DBCluster) error {
+
+	if err := r.setUpCredentialsIfNeeded(cr); err != nil {
+		return err
 	}
 
 	if err := r.setCRDeleteClusterID(cr); err != nil {
@@ -30,9 +29,9 @@ func (r *ReconcileDBCluster) setUpDefaultsIfNeeded(cr *kubev1alpha1.DBCluster, i
 // used when deleteSpec.DBClusterID is not set, than use the one provided within cr.createClusterSpec
 // this is so we can make the clusterID optional in deleteSpec
 func (r *ReconcileDBCluster) setCRDeleteClusterID(cr *kubev1alpha1.DBCluster) error {
-	if cr.DeleteSpec.DBClusterIdentifier == nil {
-		id := *cr.Spec.DBClusterIdentifier
-		cr.DeleteSpec.DBClusterIdentifier = &id
+	if cr.Spec.DeleteSpec.DBClusterIdentifier == nil {
+		id := *cr.Spec.CreateClusterSpec.DBClusterIdentifier
+		cr.Spec.DeleteSpec.DBClusterIdentifier = &id
 		if err := lib.UpdateCr(r.client, cr); err != nil {
 			logrus.Errorf("Failed to update DBCluster CR while setting up DeleteSpec.DBClusterIdentifier: %v", err)
 			return err
@@ -42,9 +41,9 @@ func (r *ReconcileDBCluster) setCRDeleteClusterID(cr *kubev1alpha1.DBCluster) er
 }
 
 func (r *ReconcileDBCluster) setCRUsername(cr *kubev1alpha1.DBCluster) error {
-	if cr.Spec.MasterUsername == nil {
+	if cr.Spec.CreateClusterSpec.MasterUsername == nil {
 		u := lib.RandStringBytes(9)
-		cr.Spec.MasterUsername = &u
+		cr.Spec.CreateClusterSpec.MasterUsername = &u
 		if err := lib.UpdateCr(r.client, cr); err != nil {
 			logrus.Errorf("Failed to update DBCluster CR while setting up username: %v", err)
 			return err
@@ -54,9 +53,9 @@ func (r *ReconcileDBCluster) setCRUsername(cr *kubev1alpha1.DBCluster) error {
 }
 
 func (r *ReconcileDBCluster) setCRPassword(cr *kubev1alpha1.DBCluster) error {
-	if cr.Spec.MasterUserPassword == nil {
+	if cr.Spec.CreateClusterSpec.MasterUserPassword == nil {
 		p := lib.RandStringBytes(9)
-		cr.Spec.MasterUserPassword = &p
+		cr.Spec.CreateClusterSpec.MasterUserPassword = &p
 		if err := lib.UpdateCr(r.client, cr); err != nil {
 			logrus.Errorf("Failed to update DBCluster CR while setting up credentials: %v", err)
 			return err
@@ -82,7 +81,7 @@ func (r *ReconcileDBCluster) setMoreTags(cr *kubev1alpha1.DBCluster) error {
 		tags := []*rds.Tag{
 			{Key: aws.String("CLUSTER_CR_NAME"), Value: aws.String(cr.Name)},
 		}
-		cr.Spec.Tags = append(cr.Spec.Tags, tags...)
+		cr.Spec.CreateClusterSpec.Tags = append(cr.Spec.CreateClusterSpec.Tags, tags...)
 		if err := lib.UpdateCr(r.client, cr); err != nil {
 			return err
 		}
@@ -93,7 +92,7 @@ func (r *ReconcileDBCluster) setMoreTags(cr *kubev1alpha1.DBCluster) error {
 
 func (r *ReconcileDBCluster) checkIfTagContainsCRName(cr *kubev1alpha1.DBCluster) bool {
 	exists := false
-	for _, e := range cr.Spec.Tags {
+	for _, e := range cr.Spec.CreateClusterSpec.Tags {
 		if *e.Key == "CLUSTER_CR_NAME" {
 			exists := true
 			return exists

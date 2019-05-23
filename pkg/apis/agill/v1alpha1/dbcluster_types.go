@@ -17,19 +17,22 @@ type DBClusterStatus struct {
 	CurrentPhase             string                        `json:"currentPhase"`
 }
 
+type DBClusterSpec struct {
+	CreateClusterSpec *rds.CreateDBClusterInput `json:"createClusterSpec"`
+	DeleteSpec        *rds.DeleteDBClusterInput `json:"deleteClusterSpec,required"`
+}
+
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // DBCluster is the Schema for the dbclusters API
 // +k8s:openapi-gen=true
 type DBCluster struct {
-	metav1.TypeMeta    `json:",inline"`
-	metav1.ObjectMeta  `json:"metadata,omitempty"`
-	Spec               *rds.CreateDBClusterInput              `json:"createClusterSpec"`
-	CreateFromSnapshot *rds.RestoreDBClusterFromSnapshotInput `json:"createFromSnapshot"`
-	DeleteSpec         *rds.DeleteDBClusterInput              `json:"deleteClusterSpec,required"`
-	Status             DBClusterStatus                        `json:"status,omitempty"`
-	ClusterSecretName  string                                 `json:"clusterSecretName"`
-	Region             string                                 `json:"region"`
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Spec              DBClusterSpec   `json:"spec"`
+	Status            DBClusterStatus `json:"status,omitempty"`
+	ClusterSecretName string          `json:"clusterSecretName"`
+	Region            string          `json:"region"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

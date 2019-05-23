@@ -12,8 +12,9 @@ import (
 // so restore from latest available snapshot -- meaning installType must be a CREATE_INSTALL_NEW
 func (r *ReconcileDBCluster) recoverDeletedClusterFromSnapshot(cr *kubev1alpha1.DBCluster) error {
 
-	snapID, _ := getLatestClusterSnapID(*cr.Spec.DBClusterIdentifier, cr.Namespace, cr.Region)
-	restoreInput := GetRestoreClusterDBFromSnapInput(cr, *cr.Spec.DBClusterIdentifier, snapID)
+	clusterID := *cr.Spec.CreateClusterSpec.DBClusterIdentifier
+	snapID, _ := getLatestClusterSnapID(clusterID, cr.Namespace, cr.Region)
+	restoreInput := GetRestoreClusterDBFromSnapInput(cr, clusterID, snapID)
 	spew.Dump(restoreInput)
 	logrus.Infof("Using snapID: %v", snapID)
 
@@ -25,14 +26,14 @@ func (r *ReconcileDBCluster) recoverDeletedClusterFromSnapshot(cr *kubev1alpha1.
 		}
 
 		// handle restoring/creating and reconcile if still creating
-		if err := r.handlePhases(cr, *cr.Spec.DBClusterIdentifier); err != nil {
+		if err := r.handlePhases(cr); err != nil {
 			return err
 		}
 
 		cr.Status.RestoredFromSnapshotName = snapID
 		cr.Status.SecretUpdateNeeded = true
 		cr.Status.RestoreNeeded = false
-		_, cr.Status.DescriberClusterOutput = lib.DbClusterExists(&lib.RDSGenerics{ClusterID: *cr.Spec.DBClusterIdentifier, RDSClient: r.rdsClient})
+		_, cr.Status.DescriberClusterOutput = lib.DbClusterExists(&lib.RDSGenerics{ClusterID: clusterID, RDSClient: r.rdsClient})
 		if err := r.updateCrStats(cr); err != nil {
 			logrus.Errorf("Failed to update DBCluster CR status: %v", err)
 			return err

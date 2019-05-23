@@ -48,9 +48,9 @@ func getLatestClusterSnapID(clusterDBID, ns, region string) (string, error) {
 	return strings.TrimSpace(string(snapID)), err
 }
 
-func (r *ReconcileDBCluster) updateLocalStatusWithAwsStatus(cr *kubev1alpha1.DBCluster, clusterID string) (string, error) {
+func (r *ReconcileDBCluster) updateLocalStatusWithAwsStatus(cr *kubev1alpha1.DBCluster) (string, error) {
 
-	exists, out := lib.DbClusterExists(&lib.RDSGenerics{RDSClient: r.rdsClient, ClusterID: clusterID})
+	exists, out := lib.DbClusterExists(&lib.RDSGenerics{RDSClient: r.rdsClient, ClusterID: *cr.Spec.CreateClusterSpec.DBClusterIdentifier})
 	currentLocalPhase := cr.Status.CurrentPhase
 
 	if exists {
@@ -69,10 +69,10 @@ func (r *ReconcileDBCluster) updateLocalStatusWithAwsStatus(cr *kubev1alpha1.DBC
 
 }
 
-func (r *ReconcileDBCluster) handlePhases(cr *kubev1alpha1.DBCluster, clusterID string) error {
+func (r *ReconcileDBCluster) handlePhases(cr *kubev1alpha1.DBCluster) error {
 
 	// always update first before checking ( so restore and delete can be handled )
-	currentPhase, _ := r.updateLocalStatusWithAwsStatus(cr, clusterID)
+	currentPhase, _ := r.updateLocalStatusWithAwsStatus(cr)
 
 	switch currentPhase {
 	case "available":
@@ -95,17 +95,8 @@ func getClusterSecretName(cr *kubev1alpha1.DBCluster) string {
 	return name
 }
 
-func getCreationType(cr *kubev1alpha1.DBCluster) lib.ClusterInstallType {
-	if cr.Spec != nil && cr.CreateFromSnapshot == nil {
-		return lib.CLUSTER_INSTALL_NEW
-	} else if cr.Spec == nil && cr.CreateFromSnapshot != nil {
-		return lib.CLUSTER_INSTALL_FROM_SNAPSHOT
-	}
-	return ""
-}
-
 func validateRequiredInput(cr *kubev1alpha1.DBCluster) error {
-	if cr.Spec == nil && cr.CreateFromSnapshot == nil {
+	if cr.Spec.CreateClusterSpec == nil {
 		return errors.New("CreateClusterSpecEmptyError")
 	}
 
@@ -113,7 +104,7 @@ func validateRequiredInput(cr *kubev1alpha1.DBCluster) error {
 		return errors.New("regionCannotBeEmptyError")
 	}
 
-	if cr.DeleteSpec == nil {
+	if cr.Spec.DeleteSpec == nil {
 		return errors.New("deleteClusterSpecCannotBeEmptyError")
 	}
 	return nil

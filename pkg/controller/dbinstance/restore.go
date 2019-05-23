@@ -53,7 +53,7 @@ func getInstanceSnapID(cr *kubev1alpha1.DBInstance) (string, error) {
 	return strings.TrimSpace(string(snapID)), err
 }
 
-// this will restore instances from snapshot
+// this will restore instances from snapshot that were not prt of a cluster
 func (r *ReconcileDBInstance) restoreStandAloneInstance(cr *kubev1alpha1.DBInstance) error {
 	if exists, _ := lib.DBInstanceExists(&lib.RDSGenerics{RDSClient: r.rdsClient, InstanceID: *cr.Spec.DBInstanceIdentifier}); !exists {
 		if _, err := r.rdsClient.RestoreDBInstanceFromDBSnapshot(restoreInstanceInput(cr)); err != nil {

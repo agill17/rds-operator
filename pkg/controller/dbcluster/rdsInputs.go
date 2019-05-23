@@ -8,16 +8,16 @@ import (
 func GetRestoreClusterDBFromSnapInput(cr *kubev1alpha1.DBCluster, clusterDBId string, snapID string) *rds.RestoreDBClusterFromSnapshotInput {
 
 	restoreClusterIn := &rds.RestoreDBClusterFromSnapshotInput{
-		AvailabilityZones:   cr.Spec.AvailabilityZones,
+		AvailabilityZones:   cr.Spec.CreateClusterSpec.AvailabilityZones,
 		DBClusterIdentifier: &clusterDBId,
-		DBSubnetGroupName:   cr.Spec.DBSubnetGroupName,
-		DatabaseName:        cr.Spec.DatabaseName,
-		DeletionProtection:  cr.Spec.DeletionProtection,
-		Engine:              cr.Spec.Engine,
-		EngineMode:          cr.Spec.EngineMode,
-		EngineVersion:       cr.Spec.EngineVersion,
+		DBSubnetGroupName:   cr.Spec.CreateClusterSpec.DBSubnetGroupName,
+		DatabaseName:        cr.Spec.CreateClusterSpec.DatabaseName,
+		DeletionProtection:  cr.Spec.CreateClusterSpec.DeletionProtection,
+		Engine:              cr.Spec.CreateClusterSpec.Engine,
+		EngineMode:          cr.Spec.CreateClusterSpec.EngineMode,
+		EngineVersion:       cr.Spec.CreateClusterSpec.EngineVersion,
 		SnapshotIdentifier:  &snapID,
-		VpcSecurityGroupIds: cr.Spec.VpcSecurityGroupIds,
+		VpcSecurityGroupIds: cr.Spec.CreateClusterSpec.VpcSecurityGroupIds,
 	}
 	return restoreClusterIn
 }

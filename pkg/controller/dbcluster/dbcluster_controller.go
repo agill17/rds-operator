@@ -77,7 +77,9 @@ func (r *ReconcileDBCluster) Reconcile(request reconcile.Request) (reconcile.Res
 		return reconcile.Result{}, err
 	}
 
-	installType := getCreationType(cr)
+	if err := r.setUpDefaultsIfNeeded(cr); err != nil {
+		return reconcile.Result{}, err
+	}
 
 	// set up finalizers
 	currentFinalizers := cr.GetFinalizers()
@@ -98,18 +100,14 @@ func (r *ReconcileDBCluster) Reconcile(request reconcile.Request) (reconcile.Res
 		return reconcile.Result{}, err
 	}
 
-	if err := r.setUpDefaultsIfNeeded(cr, installType); err != nil {
-		return reconcile.Result{}, err
-	}
-
 	// create cluster
 	if !cr.Status.Created {
 
-		err := r.createItAndUpdateState(cr, installType)
+		err := r.createItAndUpdateState(cr)
 		if err != nil {
 			switch err.(type) {
 			case *lib.ErrorResourceCreatingInProgress:
-				logrus.Warnf("Namespace: %v | ClusterID: %v | Msg: Cluster still in creating phase. Reconciling to check again.", cr.Namespace, *cr.Spec.DBClusterIdentifier)
+				logrus.Warnf("Namespace: %v | CR: %v | Msg: Cluster still in creating phase. Reconciling to check again.", cr.Namespace, cr.Name)
 				return reconcile.Result{Requeue: true}, nil
 			default:
 				return reconcile.Result{}, err
@@ -119,7 +117,7 @@ func (r *ReconcileDBCluster) Reconcile(request reconcile.Request) (reconcile.Res
 	}
 
 	// create secret
-	if err := r.createSecret(cr, installType); err != nil {
+	if err := r.createSecret(cr); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -137,8 +135,7 @@ func (r *ReconcileDBCluster) Reconcile(request reconcile.Request) (reconcile.Res
 	}
 
 	// at the end -- keep restore status up to date if RehealFromLatestSnapshot is turned on
-	// or if a cr is asking to create a fresh db from an existing snapID
-	exists, _ := lib.DbClusterExists(&lib.RDSGenerics{RDSClient: r.rdsClient, ClusterID: *cr.Spec.DBClusterIdentifier})
+	exists, _ := lib.DbClusterExists(&lib.RDSGenerics{RDSClient: r.rdsClient, ClusterID: *cr.Spec.CreateClusterSpec.DBClusterIdentifier})
 	if !exists && cr.Status.Created {
 		cr.Status.RestoreNeeded = true
 		if err := r.updateCrStats(cr); err != nil {

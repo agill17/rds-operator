@@ -13,19 +13,19 @@ import (
 	kubev1alpha1 "github.com/agill17/rds-operator/pkg/apis/agill/v1alpha1"
 )
 
-func (r *ReconcileDBCluster) deleteCluster(cr *kubev1alpha1.DBCluster) error {
+func (r *ReconcileDBCluster) deleteCluster(cr *kubev1alpha1.DBCluster, clusterID string) error {
 	var err error
-	deleteClusterInput := cr.DeleteSpec
+	deleteClusterInput := cr.Spec.DeleteSpec
 
 	if !(*deleteClusterInput.SkipFinalSnapshot) {
 		currentTime := time.Now().Format("2006-01-02:03-02-44")
-		snashotName := fmt.Sprintf("%v-%v", *cr.Spec.DBClusterIdentifier, strings.Replace(currentTime, ":", "-", -1))
-		if cr.DeleteSpec.FinalDBSnapshotIdentifier == nil {
+		snashotName := fmt.Sprintf("%v-%v", clusterID, strings.Replace(currentTime, ":", "-", -1))
+		if deleteClusterInput.FinalDBSnapshotIdentifier == nil {
 			deleteClusterInput.FinalDBSnapshotIdentifier = aws.String(snashotName)
 		}
 	}
 
-	if exists, out := lib.DbClusterExists(&lib.RDSGenerics{RDSClient: r.rdsClient, ClusterID: *cr.Spec.DBClusterIdentifier}); exists {
+	if exists, out := lib.DbClusterExists(&lib.RDSGenerics{RDSClient: r.rdsClient, ClusterID: clusterID}); exists {
 
 		// already in deleting state?
 		if *out.DBClusters[0].Status == "deleting" {
@@ -46,7 +46,7 @@ func (r *ReconcileDBCluster) handleDelete(cr *kubev1alpha1.DBCluster) error {
 	zeroFinalizers := len(cr.GetFinalizers()) == 0
 
 	if deletionTimeExists && !zeroFinalizers {
-		if err := r.deleteCluster(cr); err != nil {
+		if err := r.deleteCluster(cr, *cr.Spec.CreateClusterSpec.DBClusterIdentifier); err != nil {
 			return err
 		}
 
