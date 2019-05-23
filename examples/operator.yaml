@@ -1,0 +1,250 @@
+kind: Namespace
+apiVersion: v1
+metadata: 
+  name: rds-operator
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: rds-operator
+  namespace: rds-operator
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: dbclusters.agill.apps
+spec:
+  group: agill.apps
+  names:
+    kind: DBCluster
+    listKind: DBClusterList
+    plural: dbclusters
+    singular: dbcluster
+  scope: Namespaced
+  subresources:
+    status: {}
+  validation:
+    openAPIV3Schema:
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          type: object
+        status:
+          type: object
+  version: v1alpha1
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+---
+aapiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: dbinstances.agill.apps
+spec:
+  group: agill.apps
+  names:
+    kind: DBInstance
+    listKind: DBInstanceList
+    plural: dbinstances
+    singular: dbinstance
+  scope: Namespaced
+  subresources:
+    status: {}
+  validation:
+    openAPIV3Schema:
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          type: object
+        status:
+          type: object
+  version: v1alpha1
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: dbsubnetgroups.agill.apps
+spec:
+  group: agill.apps
+  names:
+    kind: DBSubnetGroup
+    listKind: DBSubnetGroupList
+    plural: dbsubnetgroups
+    singular: dbsubnetgroup
+  scope: Namespaced
+  subresources:
+    status: {}
+  validation:
+    openAPIV3Schema:
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          type: object
+        status:
+          type: object
+  version: v1alpha1
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: null
+  name: rds-operator
+  namespace: rds-operator
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  - services
+  - endpoints
+  - persistentvolumeclaims
+  - events
+  - configmaps
+  - secrets
+  verbs:
+  - '*'
+- apiGroups:
+  - ""
+  resources:
+  - namespaces
+  verbs:
+  - get
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  - daemonsets
+  - replicasets
+  - statefulsets
+  verbs:
+  - '*'
+- apiGroups:
+  - monitoring.coreos.com
+  resources:
+  - servicemonitors
+  verbs:
+  - get
+  - create
+- apiGroups:
+  - agill.apps
+  resources:
+  - '*'
+  verbs:
+  - '*'
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: rds-operator
+  namespace: rds-operator
+subjects:
+- kind: ServiceAccount
+  name: rds-operator
+  namespace: rds-operator
+roleRef:
+  kind: ClusterRole
+  name: rds-operator
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: v1
+kind: Secret
+metadata: 
+  name: aws-creds
+  namespace: rds-operator
+type: Opaque
+data:
+  AWS_ACCESS: key
+  AWS_SECRET: key
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rds-operator
+  namespace: rds-operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: rds-operator
+  template:
+    metadata:
+      labels:
+        name: rds-operator
+    spec:
+      serviceAccountName: rds-operator
+      containers:
+        - name: rds-operator
+          image: agill17/rds-operator:0.2.0
+          ports:
+          - containerPort: 60000
+            name: metrics
+          command:
+          - rds-operator
+          imagePullPolicy: Always
+          readinessProbe:
+            exec:
+              command:
+                - stat
+                - /tmp/operator-sdk-ready
+            initialDelaySeconds: 4
+            periodSeconds: 10
+            failureThreshold: 1
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: OPERATOR_NAME
+              value: "rds-operator"
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom: 
+                secretKeyRef:
+                  name: aws-creds
+                  key: "AWS_ACCESS"
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: aws-creds
+                  key: "AWS_SECRET"

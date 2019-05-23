@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: amrit
+---
+apiVersion: agill.apps/v1alpha1
+kind: DBSubnetGroup
+metadata:
+  name: amrit-subnet-group
+  namespace: amrit
+  labels:
+    author: amrit ## used for tags in AWs
+createDBSubnetGroupSpec:
+  # DBSubnetGroupDescription: "This is created by aws-operator" --  optional
+  # DBSubnetGroupName: "amrit-rds-subnet" -- optional -- defaults to metadata.name
+  SubnetIds:  # required
+    - subnet-f9b8909d # us-east-1a
+    - subnet-4a989901 # us-east-1c
+    - subnet-b6ebac89	# us-east-1e
+  Tags:
+  - Key: "Author"
+    Value: "Amrit"
+  - Key: "Another-key"
+    Value: "Another-value"

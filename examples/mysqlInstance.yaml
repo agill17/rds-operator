@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: amrit
+---
+apiVersion: agill.apps/v1alpha1
+kind: DBInstance
+metadata:
+  name: mysql-instance
+  namespace: amrit
+serviceName: mysql-endpoint
+createInstanceSpec:
+## All create parameters available natively from aws sdk
+  ## so this controller STRICTLY follows AWS parameter combination
+  ## so ensure correct parameters are passed as per their doc and as per your requirement
+  # https://docs.aws.amazon.com/sdk-for-go/api/service/rds/#CreateDBInstanceInput
+  Engine: "mysql"
+  EngineVersion: 5.7.24
+  LicenseModel: "general-public-license"
+  DBInstanceClass: db.t2.small
+  AllocatedStorage: 20
+  # MasterUsername: root -- optional ( generates a random string )
+  # MasterUserPassword: password -- optional ( generates a random string )
+  AutoMinorVersionUpgrade: false
+  CopyTagsToSnapshot: true
+  DBInstanceIdentifier: amrit-mysql
+  BackupRetentionPeriod: 1
+  MultiAZ: true
+  PubliclyAccessible: true
+deleteInstanceSpec:
+  DeleteAutomatedBackups: false
+  SkipFinalSnapshot: false 
+
