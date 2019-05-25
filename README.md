@@ -9,8 +9,8 @@
 
 
 # Features
-- Create ( All RDS Databases, Subnet groups ) :white_check_mark:
-- Delete ( All RDS Databases, Subnet groups ) :white_check_mark:
+- Create ( **All RDS Databases**, Subnet groups ) :white_check_mark:
+- Delete ( **All RDS Databases**, Subnet groups ) :white_check_mark:
 - Update ( COMING SOON ) :x:
 - CreateFromRDSSnapshot ( COMING SOON ) :x:
 - CreateReadReplica ( COMING SOON ) :x:
