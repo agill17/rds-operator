@@ -6,7 +6,7 @@ type ErrorResourceCreatingInProgress struct {
 	Message string
 }
 
-func (e *ErrorResourceCreatingInProgress) Error() string {
+func (e ErrorResourceCreatingInProgress) Error() string {
 	return e.Message
 }
 
@@ -14,6 +14,6 @@ type ErrorResourceDeletingInProgress struct {
 	Message string
 }
 
-func (e *ErrorResourceDeletingInProgress) Error() string {
+func (e ErrorResourceDeletingInProgress) Error() string {
 	return e.Message
 }
