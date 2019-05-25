@@ -19,13 +19,13 @@ func (r *ReconcileDBInstance) deleteDBInstance(cr *kubev1alpha1.DBInstance, dbID
 
 	deleteInput := &rds.DeleteDBInstanceInput{
 		DBInstanceIdentifier:   &dbID,
-		SkipFinalSnapshot:      &cr.DeleteInstance.SkipFinalSnapshot,
-		DeleteAutomatedBackups: &cr.DeleteInstance.DeleteAutomatedBackups,
+		SkipFinalSnapshot:      &cr.Spec.DeleteInstanceSpec.SkipFinalSnapshot,
+		DeleteAutomatedBackups: &cr.Spec.DeleteInstanceSpec.DeleteAutomatedBackups,
 	}
 
 	if isStandAlone(cr) {
 		currentTime := time.Now().Format("2006-01-02:03-02-44")
-		deleteSnapID := fmt.Sprintf("%v-%v", *cr.Spec.DBInstanceIdentifier, strings.Replace(currentTime, ":", "-", -1))
+		deleteSnapID := fmt.Sprintf("%v-%v", *cr.Spec.CreateInstanceSpec.DBInstanceIdentifier, strings.Replace(currentTime, ":", "-", -1))
 		deleteInput.FinalDBSnapshotIdentifier = &deleteSnapID
 	}
 
@@ -49,4 +49,14 @@ func (r *ReconcileDBInstance) deleteDBInstance(cr *kubev1alpha1.DBInstance, dbID
 	}
 	logrus.Infof("Successfully deleted DBInstance for Namespace: %v", cr.Namespace)
 	return err
+}
+
+func (r *ReconcileDBInstance) handleDeleteEvents(cr *kubev1alpha1.DBInstance, dbID string) error {
+	deletionTimeExists := cr.GetDeletionTimestamp() != nil
+	zeroFinalizers := len(cr.GetFinalizers()) == 0
+	if deletionTimeExists && !zeroFinalizers {
+		return r.deleteDBInstance(cr, dbID)
+	}
+
+	return nil
 }

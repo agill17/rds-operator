@@ -7,10 +7,10 @@ import (
 )
 
 func (r *ReconcileDBInstance) setUsername(cr *kubev1alpha1.DBInstance) error {
-	if cr.Spec.MasterUsername == nil {
+	if cr.Spec.CreateInstanceSpec.MasterUsername == nil {
 		// meaning this is a standalone deployment
 		u := lib.RandStringBytes(9)
-		cr.Spec.MasterUsername = &u
+		cr.Spec.CreateInstanceSpec.MasterUsername = &u
 		if err := lib.UpdateCr(r.client, cr); err != nil {
 			logrus.Errorf("Failed to update DBInstance CR while setting up username: %v", err)
 			return err
@@ -20,8 +20,8 @@ func (r *ReconcileDBInstance) setUsername(cr *kubev1alpha1.DBInstance) error {
 }
 
 func (r *ReconcileDBInstance) setRegion(cr *kubev1alpha1.DBInstance) error {
-	if cr.Region == "" {
-		cr.Region = "us-east-1"
+	if cr.Spec.Region == "" {
+		cr.Spec.Region = "us-east-1"
 		if err := lib.UpdateCr(r.client, cr); err != nil {
 			logrus.Errorf("Failed to update DBInstance CR while setting up password: %v", err)
 			return err
@@ -31,10 +31,10 @@ func (r *ReconcileDBInstance) setRegion(cr *kubev1alpha1.DBInstance) error {
 }
 
 func (r *ReconcileDBInstance) setPassword(cr *kubev1alpha1.DBInstance) error {
-	if cr.Spec.MasterUserPassword == nil {
+	if cr.Spec.CreateInstanceSpec.MasterUserPassword == nil {
 		// meaning this is a standalone deployment
 		u := lib.RandStringBytes(9)
-		cr.Spec.MasterUserPassword = &u
+		cr.Spec.CreateInstanceSpec.MasterUserPassword = &u
 		if err := lib.UpdateCr(r.client, cr); err != nil {
 			logrus.Errorf("Failed to update DBInstance CR while setting up password: %v", err)
 			return err
@@ -44,7 +44,7 @@ func (r *ReconcileDBInstance) setPassword(cr *kubev1alpha1.DBInstance) error {
 }
 
 func (r *ReconcileDBInstance) setJobBackOffLimit(cr *kubev1alpha1.DBInstance) error {
-	cr.InitDB.BackOffLimit = 6
+	cr.Spec.InitDB.BackOffLimit = 6
 	return lib.UpdateCr(r.client, cr)
 }
 
@@ -73,7 +73,7 @@ func (r *ReconcileDBInstance) setCRDefaultsIfNeeded(cr *kubev1alpha1.DBInstance)
 		return err
 	}
 
-	if cr.InitDB.Image != "" {
+	if cr.Spec.InitDB.Image != "" {
 		if err := r.setInitDBJobDefaults(cr); err != nil {
 			return err
 		}

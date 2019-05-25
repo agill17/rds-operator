@@ -40,24 +40,25 @@ func (r *ReconcileDBInstance) restore(cr *kubev1alpha1.DBInstance) error {
 }
 
 func getInstanceSnapID(cr *kubev1alpha1.DBInstance) (string, error) {
-	cmd := fmt.Sprintf("aws rds describe-db-snapshots --query \"DBSnapshots[?DBInstanceIdentifier=='%v']\" --region %v | jq -r 'max_by(.SnapshotCreateTime).DBSnapshotIdentifier'", *cr.Spec.DBInstanceIdentifier, cr.Region)
+	dbInsID := *cr.Spec.CreateInstanceSpec.DBInstanceIdentifier
+	cmd := fmt.Sprintf("aws rds describe-db-snapshots --query \"DBSnapshots[?DBInstanceIdentifier=='%v']\" --region %v | jq -r 'max_by(.SnapshotCreateTime).DBSnapshotIdentifier'", dbInsID, cr.Spec.Region)
 	snapID, err := exec.Command("/bin/sh", "-c", cmd).Output()
-
 	if err != nil {
 		logrus.Errorf("Failed to execute command: %s", err)
 		return "", err
 	}
 
-	logrus.Infof("Namespace: %v | DB Identifier: %v | Msg: Latest snapshot id available: %v", cr.Namespace, *cr.Spec.DBInstanceIdentifier, strings.TrimSpace(string(snapID)))
+	logrus.Infof("Namespace: %v | DB Identifier: %v | Msg: Latest snapshot id available: %v", cr.Namespace, dbInsID, strings.TrimSpace(string(snapID)))
 
 	return strings.TrimSpace(string(snapID)), err
 }
 
 // this will restore instances from snapshot that were not prt of a cluster
 func (r *ReconcileDBInstance) restoreStandAloneInstance(cr *kubev1alpha1.DBInstance) error {
-	if exists, _ := lib.DBInstanceExists(&lib.RDSGenerics{RDSClient: r.rdsClient, InstanceID: *cr.Spec.DBInstanceIdentifier}); !exists {
+	dbInsID := *cr.Spec.CreateInstanceSpec.DBInstanceIdentifier
+	if exists, _ := lib.DBInstanceExists(&lib.RDSGenerics{RDSClient: r.rdsClient, InstanceID: dbInsID}); !exists {
 		if _, err := r.rdsClient.RestoreDBInstanceFromDBSnapshot(restoreInstanceInput(cr)); err != nil {
-			logrus.Errorf("Namespace: %v | DB Identifier: %v | Msg: ERROR While restoring db from snapshot: %v", cr.Namespace, *cr.Spec.DBInstanceIdentifier, err)
+			logrus.Errorf("Namespace: %v | DB Identifier: %v | Msg: ERROR While restoring db from snapshot: %v", cr.Namespace, dbInsID, err)
 			return err
 		}
 	}
@@ -74,27 +75,16 @@ func (r *ReconcileDBInstance) restoreStandAloneInstance(cr *kubev1alpha1.DBInsta
 func restoreInstanceInput(cr *kubev1alpha1.DBInstance) *rds.RestoreDBInstanceFromDBSnapshotInput {
 	snapID, _ := getInstanceSnapID(cr)
 	restoreDBInput := &rds.RestoreDBInstanceFromDBSnapshotInput{
-		AutoMinorVersionUpgrade: cr.Spec.AutoMinorVersionUpgrade,
-		AvailabilityZone:        cr.Spec.AvailabilityZone,
+		AutoMinorVersionUpgrade: cr.Spec.CreateInstanceSpec.AutoMinorVersionUpgrade,
+		AvailabilityZone:        cr.Spec.CreateInstanceSpec.AvailabilityZone,
 		CopyTagsToSnapshot:      aws.Bool(true),
-		DBInstanceClass:         cr.Spec.DBInstanceClass,
-		DBInstanceIdentifier:    cr.Spec.DBInstanceIdentifier,
-		DBSubnetGroupName:       cr.Spec.DBSubnetGroupName,
-		DeletionProtection:      cr.Spec.DeletionProtection,
-		Engine:                  cr.Spec.Engine,
+		DBInstanceClass:         cr.Spec.CreateInstanceSpec.DBInstanceClass,
+		DBInstanceIdentifier:    cr.Spec.CreateInstanceSpec.DBInstanceIdentifier,
+		DBSubnetGroupName:       cr.Spec.CreateInstanceSpec.DBSubnetGroupName,
+		DeletionProtection:      cr.Spec.CreateInstanceSpec.DeletionProtection,
+		Engine:                  cr.Spec.CreateInstanceSpec.Engine,
 		DBSnapshotIdentifier:    &snapID,
 	}
 	return restoreDBInput
 
-}
-
-func (r *ReconcileDBInstance) restoreFromSnap(cr *kubev1alpha1.DBInstance) (*rds.RestoreDBInstanceFromDBSnapshotOutput, error) {
-	var err error
-	var out *rds.RestoreDBInstanceFromDBSnapshotOutput
-
-	if out, err = r.rdsClient.RestoreDBInstanceFromDBSnapshot(cr.RestoreFromSnap); err != nil {
-		logrus.Errorf("Error while creating a new db instance from snapshot input ~~~> ", err)
-		return nil, err
-	}
-	return out, nil
 }

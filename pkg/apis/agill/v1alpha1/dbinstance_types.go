@@ -11,6 +11,12 @@ import (
 
 // DBInstanceSpec defines the desired state of DBInstance
 type DBInstanceSpec struct {
+	Region             string                     `json:"region"`
+	InstanceSecretName string                     `json:"instanceSecretName,omitempty"`
+	ServiceName        string                     `json:"serviceName,omitempty"`
+	InitDB             InitDB                     `json:"initDB,omitempty"`
+	CreateInstanceSpec *rds.CreateDBInstanceInput `json:"createInstanceSpec,required"`
+	DeleteInstanceSpec DeleteInstanceSpec         `json:"deleteInstanceSpec,required"`
 }
 
 // DBInstanceStatus defines the observed state of DBInstance
@@ -32,17 +38,10 @@ type DBInstanceStatus struct {
 // DBInstance is the Schema for the dbinstances API
 // +k8s:openapi-gen=true
 type DBInstance struct {
-	metav1.TypeMeta    `json:",inline"`
-	metav1.ObjectMeta  `json:"metadata,omitempty"`
-	RestoreFromSnap    *rds.RestoreDBInstanceFromDBSnapshotInput `json:"restoreInstanceFromSnapshotSpec,required"`
-	Spec               *rds.CreateDBInstanceInput                `json:"createInstanceSpec,required"`
-	DeleteInstance     DeleteInstanceSpec                        `json:"deleteInstanceSpec"`
-	Status             DBInstanceStatus                          `json:"status,omitempty"`
-	InitDB             InitDB                                    `json:"initDB,omitempty"`
-	InstanceSecretName string                                    `json:"instanceSecretName,omitempty"`
-	Region             string                                    `json:"region"`
-	ServiceName        string                                    `json:"serviceName,omitempty"`
-	DBClusterCRName    string                                    `json:"dbClusterCRName"`
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Spec              DBInstanceSpec   `json:"spec,required"`
+	Status            DBInstanceStatus `json:"status,omitempty"`
 }
 
 type DeleteInstanceSpec struct {

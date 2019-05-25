@@ -12,7 +12,6 @@ import (
 	goerror "errors"
 
 	kubev1alpha1 "github.com/agill17/rds-operator/pkg/apis/agill/v1alpha1"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -49,16 +48,6 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
-	// TODO(user): Modify this to be the types you create that are owned by the primary resource
-	// Watch for changes to secondary resource Pods and requeue the owner DBInstance
-	err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
-		IsController: true,
-		OwnerType:    &kubev1alpha1.DBInstance{},
-	})
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -73,11 +62,6 @@ type ReconcileDBInstance struct {
 
 // Reconcile reads that state of the cluster for a DBInstance object and makes changes based on the state read
 // and what is in the DBInstance.Spec
-// TODO(user): Modify this Reconcile function to implement your Controller logic.  This example creates
-// a Pod as an example
-// Note:
-// The Controller will requeue the Request to be processed again if the returned error is non-nil or
-// Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
 func (r *ReconcileDBInstance) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 
 	// Fetch the DBInstance instance
@@ -92,7 +76,7 @@ func (r *ReconcileDBInstance) Reconcile(request reconcile.Request) (reconcile.Re
 
 	// if spec is nil, return err until not nil
 	// this is to avoid null pointer dereference ( as i am directly using aws objects )
-	if cr.Spec == nil {
+	if cr.Spec.CreateInstanceSpec == nil {
 		logrus.Errorf("createInstanceSpec cannot be nil. Please provide a spec and try again in namespace: %v", cr.Namespace)
 		return reconcile.Result{}, goerror.New("EmptyDBInstanceSpecError")
 	}
@@ -119,15 +103,8 @@ func (r *ReconcileDBInstance) Reconcile(request reconcile.Request) (reconcile.Re
 	}
 
 	// delete
-	if deletionTimeExists && anyFinalizersExists {
-		if err := r.deleteDBInstance(cr, *cr.Spec.DBInstanceIdentifier); err != nil {
-			return reconcile.Result{}, err
-		}
-		cr.SetFinalizers([]string{})
-		if err := lib.UpdateCr(r.client, cr); err != nil {
-			return reconcile.Result{}, err
-		}
-		return reconcile.Result{}, nil
+	if err := r.handleDeleteEvents(cr, *cr.Spec.CreateInstanceSpec.DBInstanceIdentifier); err != nil {
+		return reconcile.Result{}, err
 	}
 
 	// create
@@ -138,7 +115,7 @@ func (r *ReconcileDBInstance) Reconcile(request reconcile.Request) (reconcile.Re
 				logrus.Warnf("DBInstance not up yet, Reconciling to check again")
 				return reconcile.Result{Requeue: true}, nil
 			default:
-				logrus.Errorf("Namespace: %v | DB Instance ID: %v | Msg: Something went wrong when creating db instance: %v", cr.Namespace, *cr.Spec.DBInstanceIdentifier, err)
+				logrus.Errorf("Namespace: %v | DB Instance ID: %v | Msg: Something went wrong when creating db instance: %v", cr.Namespace, *cr.Spec.CreateInstanceSpec.DBInstanceIdentifier, err)
 				return reconcile.Result{}, err
 			}
 		}
@@ -155,7 +132,7 @@ func (r *ReconcileDBInstance) Reconcile(request reconcile.Request) (reconcile.Re
 	}
 
 	// restore
-	instanceExists, _ := lib.DBInstanceExists(&lib.RDSGenerics{RDSClient: r.rdsClient, InstanceID: *cr.Spec.DBInstanceIdentifier})
+	instanceExists, _ := lib.DBInstanceExists(&lib.RDSGenerics{RDSClient: r.rdsClient, InstanceID: *cr.Spec.CreateInstanceSpec.DBInstanceIdentifier})
 	if cr.Status.DeployedInitially && !instanceExists {
 		if err := r.restore(cr); err != nil {
 			return reconcile.Result{}, err
@@ -164,11 +141,3 @@ func (r *ReconcileDBInstance) Reconcile(request reconcile.Request) (reconcile.Re
 
 	return reconcile.Result{}, nil
 }
-
-/*
-	Cases to handle:
-	1. DB exists in AWS AND CR has no status about it -- dont do anything but just log that msg
-	2. DB does not exist in AWS AND CR has no status about any deployment -- create a new fresh DB
-	3. DB does not exist in AWS AND CR has status that it was deployed atleast once -- reheal from snapshot if defined to do so, notify
-	4. DB does exists in AWS AND CR has status about it -- dont do anything but just log that msg
-*/

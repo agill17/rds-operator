@@ -2,8 +2,9 @@ package dbinstance
 
 import (
 	"context"
-	batchv1 "k8s.io/api/batch/v1"
 	"time"
+
+	batchv1 "k8s.io/api/batch/v1"
 
 	kubev1alpha1 "github.com/agill17/rds-operator/pkg/apis/agill/v1alpha1"
 	"github.com/sirupsen/logrus"
@@ -34,12 +35,12 @@ func (r *ReconcileDBInstance) getSvcObj(cr *kubev1alpha1.DBInstance) *corev1.Ser
 
 func (r *ReconcileDBInstance) getSecretObj(cr *kubev1alpha1.DBInstance, masterUsername, masterPassword, secretName string) *corev1.Secret {
 	data := map[string][]byte{
-		"DATABASE_ID":       []byte(*cr.Spec.DBInstanceIdentifier),
+		"DATABASE_ID":       []byte(*cr.Spec.CreateInstanceSpec.DBInstanceIdentifier),
 		"DATABASE_ENDPOINT": []byte(*cr.Status.RDSInstanceStatus.DBInstances[0].Endpoint.Address),
 	}
 
-	if cr.Spec.DBName != nil {
-		data["DATABASE_NAME"] = []byte(*cr.Spec.DBName)
+	if cr.Spec.CreateInstanceSpec.DBName != nil {
+		data["DATABASE_NAME"] = []byte(*cr.Spec.CreateInstanceSpec.DBName)
 	}
 
 	// if associated to cluster, than creds are managed by DBCluster secret
@@ -85,7 +86,7 @@ func (r *ReconcileDBInstance) getCreateJobInput(cr *kubev1alpha1.DBInstance, job
 					RestartPolicy: "Never",
 					Containers: []corev1.Container{{
 						Name:    "init-rds-container",
-						Image:   cr.InitDB.Image,
+						Image:   cr.Spec.InitDB.Image,
 						Command: jobCmd,
 						Env: []corev1.EnvVar{
 							{
@@ -129,7 +130,7 @@ func (r *ReconcileDBInstance) updateK8sFiles(cr *kubev1alpha1.DBInstance) error 
 	secretName := getSecretName(cr)
 	svcObj, _ := r.getSvcFromCluster(svcName, cr)
 
-	logrus.Infof("Namesapce: %v | DB Identifier: %v | Msg: Updating External Service as DB Endpoint as changed", cr.Namespace, *cr.Spec.DBInstanceIdentifier)
+	logrus.Infof("Namesapce: %v | DB Identifier: %v | Msg: Updating External Service as DB Endpoint as changed", cr.Namespace, *cr.Spec.CreateInstanceSpec.DBInstanceIdentifier)
 	svcObj.Spec.ExternalName = *cr.Status.RDSInstanceStatus.DBInstances[0].Endpoint.Address
 	if err := r.client.Update(context.TODO(), svcObj); err != nil {
 		logrus.Errorf("Failed while updating service as UpdateKubeFiles was required: %v", err)
@@ -137,7 +138,7 @@ func (r *ReconcileDBInstance) updateK8sFiles(cr *kubev1alpha1.DBInstance) error 
 
 	// update secret
 	secretObj, _ := r.getSecretFromCluster(cr, secretName)
-	logrus.Infof("Namesapce: %v | DB Identifier: %v | Msg: Updating Secret as DB Endpoint as changed", cr.Namespace, *cr.Spec.DBInstanceIdentifier)
+	logrus.Infof("Namesapce: %v | DB Identifier: %v | Msg: Updating Secret as DB Endpoint as changed", cr.Namespace, *cr.Spec.CreateInstanceSpec.DBInstanceIdentifier)
 	secretObj.Data["DATABASE_ENDPOINT"] = []byte(*cr.Status.RDSInstanceStatus.DBInstances[0].Endpoint.Address)
 	if err := r.client.Update(context.TODO(), secretObj); err != nil {
 		logrus.Errorf("Failed while updating secret as UpdateKubeFiles was required: %v", err)
@@ -194,19 +195,17 @@ func (r *ReconcileDBInstance) createSecret(cr *kubev1alpha1.DBInstance) error {
 func (r *ReconcileDBInstance) createInitDBJob(instance *kubev1alpha1.DBInstance) error {
 	var err error
 
-	if instance.InitDB.Image != "" {
-		timeout := instance.InitDB.Timeout
-		jobCmd := instance.InitDB.Command
+	if instance.Spec.InitDB.Image != "" {
+		timeout := instance.Spec.InitDB.Timeout
+		jobCmd := instance.Spec.InitDB.Command
 
 		input := r.getCreateJobInput(instance, jobCmd)
-		if len(instance.InitDB.NodeSelector) != 0 {
-			input.Spec.Template.Spec.NodeSelector = instance.InitDB.NodeSelector
+		if len(instance.Spec.InitDB.NodeSelector) != 0 {
+			input.Spec.Template.Spec.NodeSelector = instance.Spec.InitDB.NodeSelector
 		}
-		if instance.InitDB.ImagePullSecret != "" {
-			input.Spec.Template.Spec.ImagePullSecrets = []corev1.LocalObjectReference{{Name: instance.InitDB.ImagePullSecret}}
+		if instance.Spec.InitDB.ImagePullSecret != "" {
+			input.Spec.Template.Spec.ImagePullSecrets = []corev1.LocalObjectReference{{Name: instance.Spec.InitDB.ImagePullSecret}}
 		}
-
-
 
 		// 1. Create job
 		err = r.client.Create(context.TODO(), input)
@@ -220,7 +219,7 @@ func (r *ReconcileDBInstance) createInitDBJob(instance *kubev1alpha1.DBInstance)
 		err = r.client.Get(context.TODO(), types.NamespacedName{Name: "init-rds", Namespace: instance.Namespace}, job)
 
 		// if initDBJob is not marked as successfull and initDBJob has not ran into a timeout yet and cr spec states to waitUntilJobCompleted/timedOut
-		if err == nil && !instance.Status.InitJobSuccessfull && instance.InitDB.WaitTillCompleted && !instance.Status.InitJobTimedOut {
+		if err == nil && !instance.Status.InitJobSuccessfull && instance.Spec.InitDB.WaitTillCompleted && !instance.Status.InitJobTimedOut {
 
 			for start := time.Now(); ; {
 				if err := r.client.Get(context.TODO(), types.NamespacedName{Name: "init-rds", Namespace: instance.Namespace}, job); err != nil {

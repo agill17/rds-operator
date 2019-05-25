@@ -26,38 +26,34 @@ spec:
     # MasterUserPassword: password # not required ( generates a random one if not passed )
     StorageEncrypted: false
   deleteClusterSpec:
-    ## All delete parameters available ( required vs not-required per aws )
-    # https://docs.aws.amazon.com/sdk-for-go/api/service/rds/#DeleteDBClusterInput
     SkipFinalSnapshot: false
     DBClusterIdentifier: amrit-aurora-cluster ## not required -- will be whatever is set inside createClusterSpec.DBClusterIdentifier
     # FinalDBSnapshotIdentifier: amrit-aurora-cluster-snap ## not required ( will be namespace-crName-timestamp)
-
 clusterSecretName: cluster-secret # not required ( defaults to metadata.name-secret )
 region: us-east-1
 
-# ---
-# apiVersion: agill.apps/v1alpha1
-# kind: DBInstance
-# metadata:
-#   name: aurora-instance
-#   namespace: amrit
-# serviceName: rds-instance-endpoint
-# createInstanceSpec:
-# ## All create parameters available natively from aws sdk
-#   ## so this controller STRICTLY follows AWS parameter combination
-#   ## so ensure correct parameters are passed as per their doc and as per your requirement
-#   # https://docs.aws.amazon.com/sdk-for-go/api/service/rds/#CreateDBInstanceInput
-#   AutoMinorVersionUpgrade: false
-#   CopyTagsToSnapshot: true
-#   DBClusterIdentifier: amrit-aurora-cluster
-#   DBInstanceIdentifier: amrit-aurora-instance
-#   AvailabilityZone: us-east-1a
-#   Engine: "aurora-mysql"
-#   MultiAZ: false
-#   PubliclyAccessible: true
-#   EngineVersion: 5.7.12
-#   DBInstanceClass: db.t2.small
-# deleteInstanceSpec:
-#   DeleteAutomatedBackups: false
-#   SkipFinalSnapshot: false 
+---
+apiVersion: agill.apps/v1alpha1
+kind: DBInstance
+metadata:
+  name: aurora-instance
+  namespace: amrit
+spec:
+  serviceName: rds-instance-endpoint
+  createInstanceSpec:
+    ## all available create fields
+    # https://docs.aws.amazon.com/sdk-for-go/api/service/rds/#CreateDBInstanceInput
+    AutoMinorVersionUpgrade: false
+    CopyTagsToSnapshot: true
+    DBClusterIdentifier: amrit-aurora-cluster
+    DBInstanceIdentifier: amrit-aurora-instance
+    AvailabilityZone: us-east-1a
+    Engine: aurora-mysql
+    MultiAZ: false
+    PubliclyAccessible: true
+    EngineVersion: 5.7.12
+    DBInstanceClass: db.t2.small
+  deleteInstanceSpec:
+    DeleteAutomatedBackups: false
+    SkipFinalSnapshot: false 
 

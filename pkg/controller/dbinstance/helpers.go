@@ -22,8 +22,8 @@ func crHasDBStatus(cr *kubev1alpha1.DBInstance) bool {
 // throws ErrorResourceCreatingInProgress when dbCluster in AWS is not marked available
 func (r *ReconcileDBInstance) dbClusterReady(cr *kubev1alpha1.DBInstance) error {
 	var err error
-
-	exists, out := lib.DbClusterExists(&lib.RDSGenerics{RDSClient: r.rdsClient, ClusterID: *cr.Spec.DBClusterIdentifier})
+	dbClsID := *cr.Spec.CreateInstanceSpec.DBClusterIdentifier
+	exists, out := lib.DbClusterExists(&lib.RDSGenerics{RDSClient: r.rdsClient, ClusterID: dbClsID})
 	if exists {
 		if strings.ToLower(*out.DBClusters[0].Status) != "available" {
 			return &lib.ErrorResourceCreatingInProgress{Message: "ClusterCreatingInProgress"}
@@ -33,7 +33,8 @@ func (r *ReconcileDBInstance) dbClusterReady(cr *kubev1alpha1.DBInstance) error 
 	return err
 }
 func (r *ReconcileDBInstance) updateLocalStatusWithAwsStatus(cr *kubev1alpha1.DBInstance) (string, error) {
-	exists, out := lib.DBInstanceExists(&lib.RDSGenerics{RDSClient: r.rdsClient, InstanceID: *cr.Spec.DBInstanceIdentifier})
+	dbInsID := *cr.Spec.CreateInstanceSpec.DBInstanceIdentifier
+	exists, out := lib.DBInstanceExists(&lib.RDSGenerics{RDSClient: r.rdsClient, InstanceID: dbInsID})
 	currentLocalPhase := cr.Status.CurrentPhase
 
 	if exists {
@@ -80,14 +81,14 @@ func (r *ReconcileDBInstance) handlePhases(cr *kubev1alpha1.DBInstance) error {
 }
 
 func validateRequiredParams(cr *kubev1alpha1.DBInstance) error {
-	if cr.Spec == nil {
+	if cr.Spec.CreateInstanceSpec == nil {
 		return errors.New("createInstanceSpecEmptyError")
 	}
 	return nil
 }
 
 func getSecretName(cr *kubev1alpha1.DBInstance) string {
-	sName := cr.InstanceSecretName
+	sName := cr.Spec.InstanceSecretName
 	if sName == "" {
 		sName = cr.Name + "-secret"
 	}
@@ -95,7 +96,7 @@ func getSecretName(cr *kubev1alpha1.DBInstance) string {
 }
 
 func getSvcName(cr *kubev1alpha1.DBInstance) string {
-	sName := cr.ServiceName
+	sName := cr.Spec.ServiceName
 	if sName == "" {
 		sName = cr.Name + "-svc"
 	}
@@ -107,12 +108,8 @@ func isStandAlone(cr *kubev1alpha1.DBInstance) bool {
 	// true: when not associated to DBCluster
 	// false: when associated to DBCluster
 
-	var standAlone bool
-
-	if cr.Spec.DBClusterIdentifier == nil {
-		standAlone = true
-	} else if cr.Spec.DBClusterIdentifier != nil {
-		standAlone = false
+	if cr.Spec.CreateInstanceSpec.DBClusterIdentifier == nil {
+		return true
 	}
-	return standAlone
+	return false
 }
