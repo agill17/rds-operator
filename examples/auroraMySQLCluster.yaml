@@ -8,6 +8,8 @@ kind: DBCluster
 metadata:
   name: aurora-cluster
   namespace: amrit
+clusterSecretName: cluster-secret # not required ( defaults to metadata.name-secret )
+region: us-east-1
 spec:
   createClusterSpec:
     ## all available create fields
@@ -29,8 +31,6 @@ spec:
     SkipFinalSnapshot: false
     DBClusterIdentifier: amrit-aurora-cluster ## not required -- will be whatever is set inside createClusterSpec.DBClusterIdentifier
     # FinalDBSnapshotIdentifier: amrit-aurora-cluster-snap ## not required ( will be namespace-crName-timestamp)
-clusterSecretName: cluster-secret # not required ( defaults to metadata.name-secret )
-region: us-east-1
 
 ---
 apiVersion: agill.apps/v1alpha1
