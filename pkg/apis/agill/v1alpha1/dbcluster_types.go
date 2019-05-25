@@ -18,7 +18,7 @@ type DBClusterStatus struct {
 }
 
 type DBClusterSpec struct {
-	CreateClusterSpec *rds.CreateDBClusterInput `json:"createClusterSpec"`
+	CreateClusterSpec *rds.CreateDBClusterInput `json:"createClusterSpec,required"`
 	DeleteSpec        *rds.DeleteDBClusterInput `json:"deleteClusterSpec,required"`
 }
 
