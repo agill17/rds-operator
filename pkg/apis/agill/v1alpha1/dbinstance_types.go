@@ -11,12 +11,13 @@ import (
 
 // DBInstanceSpec defines the desired state of DBInstance
 type DBInstanceSpec struct {
-	Region             string                     `json:"region"`
-	InstanceSecretName string                     `json:"instanceSecretName,omitempty"`
-	ServiceName        string                     `json:"serviceName,omitempty"`
-	InitDB             InitDB                     `json:"initDB,omitempty"`
-	CreateInstanceSpec *rds.CreateDBInstanceInput `json:"createInstanceSpec,required"`
-	DeleteInstanceSpec DeleteInstanceSpec         `json:"deleteInstanceSpec,required"`
+	Region                string                                `json:"region"`
+	InstanceSecretName    string                                `json:"instanceSecretName,omitempty"`
+	ServiceName           string                                `json:"serviceName,omitempty"`
+	InitDB                InitDB                                `json:"initDB,omitempty"`
+	CreateInstanceSpec    *rds.CreateDBInstanceInput            `json:"createInstanceSpec,required"`
+	CreateReadReplicaSpec *rds.CreateDBInstanceReadReplicaInput `json:"createReadReplicaSpec"`
+	DeleteInstanceSpec    DeleteInstanceSpec                    `json:"deleteInstanceSpec,required"`
 }
 
 // DBInstanceStatus defines the observed state of DBInstance

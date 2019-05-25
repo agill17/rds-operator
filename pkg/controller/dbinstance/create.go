@@ -65,3 +65,17 @@ func (r *ReconcileDBInstance) waitForClusterIfNeeded(cr *kubev1alpha1.DBInstance
 	}
 	return err
 }
+
+func (r *ReconcileDBInstance) createReadReplica(cr *kubev1alpha1.DBInstance) error {
+
+	if cr.Status.CurrentPhase == "available" && cr.Spec.CreateReadReplicaSpec != nil {
+
+		if _, err := r.rdsClient.CreateDBInstanceReadReplica(cr.Spec.CreateReadReplicaSpec); err != nil {
+			logrus.Errorf("Failed to create read replica for namespace: %v ~~> %v", cr.Namespace, err)
+			return err
+		}
+	}
+
+	return nil
+
+}

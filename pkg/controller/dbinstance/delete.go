@@ -17,6 +17,8 @@ import (
 func (r *ReconcileDBInstance) deleteDBInstance(cr *kubev1alpha1.DBInstance, dbID string) error {
 	var err error
 
+	dbInsID := *cr.Spec.CreateInstanceSpec.DBInstanceIdentifier
+
 	deleteInput := &rds.DeleteDBInstanceInput{
 		DBInstanceIdentifier:   &dbID,
 		SkipFinalSnapshot:      &cr.Spec.DeleteInstanceSpec.SkipFinalSnapshot,
@@ -25,7 +27,7 @@ func (r *ReconcileDBInstance) deleteDBInstance(cr *kubev1alpha1.DBInstance, dbID
 
 	if isStandAlone(cr) {
 		currentTime := time.Now().Format("2006-01-02:03-02-44")
-		deleteSnapID := fmt.Sprintf("%v-%v", *cr.Spec.CreateInstanceSpec.DBInstanceIdentifier, strings.Replace(currentTime, ":", "-", -1))
+		deleteSnapID := fmt.Sprintf("%v-%v", dbInsID, strings.Replace(currentTime, ":", "-", -1))
 		deleteInput.FinalDBSnapshotIdentifier = &deleteSnapID
 	}
 
@@ -47,8 +49,9 @@ func (r *ReconcileDBInstance) deleteDBInstance(cr *kubev1alpha1.DBInstance, dbID
 	} else if !exists {
 		logrus.Infof("DB instance does not exist in AWS, skipping delete of RDS: %v", dbID)
 	}
+	cr.SetFinalizers([]string{})
 	logrus.Infof("Successfully deleted DBInstance for Namespace: %v", cr.Namespace)
-	return err
+	return lib.UpdateCr(r.client, cr)
 }
 
 func (r *ReconcileDBInstance) handleDeleteEvents(cr *kubev1alpha1.DBInstance, dbID string) error {
