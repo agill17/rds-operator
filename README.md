@@ -2,7 +2,7 @@
 ### Install and Deploy 
 
 #### Option 1: kubectl way
-1. `kubectl apply -f examples/operator.yaml` ( provide in aws credentials here )
+1. `kubectl apply -f examples/operator.yaml` ( provide aws credentials in here )
 2. `kubectl apply -f examples/auroraMySQLCluster.yaml`
 
 #### Option 2: Helm chart
