@@ -1,6 +1,7 @@
 package dbcluster
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os/exec"
@@ -8,12 +9,9 @@ import (
 
 	"github.com/agill17/rds-operator/pkg/lib/dbHelpers"
 
-	"context"
-
 	kubev1alpha1 "github.com/agill17/rds-operator/pkg/apis/agill/v1alpha1"
 	"github.com/agill17/rds-operator/pkg/lib"
 	"github.com/sirupsen/logrus"
-	kubeapierror "k8s.io/apimachinery/pkg/api/errors"
 )
 
 func (r *ReconcileDBCluster) getCurrentStatusFromAWS(dbClusterID string) string {
@@ -119,14 +117,9 @@ func getInstallType(cr *kubev1alpha1.DBCluster) dbHelpers.DBInstallType {
 
 func (r *ReconcileDBCluster) createSecret(cr *kubev1alpha1.DBCluster) error {
 	secretObj := r.getSecretObj(cr)
-	if err := r.client.Create(context.TODO(), secretObj); err != nil && !kubeapierror.IsAlreadyExists(err) {
-		logrus.Errorf("Error while creating secret object: %v", err)
-		return err
-	} else if kubeapierror.IsAlreadyExists(err) {
-		logrus.Warnf("Updating cluster secret in namespace: %v", cr.Namespace)
-		r.client.Update(context.TODO(), secretObj)
-		cr.Status.SecretUpdateNeeded = false
-		return lib.UpdateCrStatus(r.client, cr)
+	if !lib.SecretExists(cr.Namespace, secretObj.Name, r.client) {
+		logrus.Infof("Namespace: %v | Secret Name: %v | Msg: Creating Secret", cr.Namespace, secretObj.Name)
+		return r.client.Create(context.TODO(), secretObj)
 	}
 
 	return nil

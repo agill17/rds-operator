@@ -4,6 +4,10 @@ import (
 	"context"
 	"math/rand"
 
+	v1 "k8s.io/api/core/v1"
+
+	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/aws/aws-sdk-go/service/rds"
@@ -54,4 +58,16 @@ func UpdateCrStatus(client client.Client, object runtime.Object) error {
 		return err
 	}
 	return nil
+}
+
+func SecretExists(namespace, secretName string, client client.Client) bool {
+	secretFound := &v1.Secret{}
+	err := client.Get(context.TODO(), types.NamespacedName{
+		Name: secretName, Namespace: namespace},
+		secretFound)
+	if err != nil && errors.IsNotFound(err) {
+		return false
+	}
+
+	return true
 }

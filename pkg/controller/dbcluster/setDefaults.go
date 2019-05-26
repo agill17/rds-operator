@@ -65,6 +65,7 @@ func (r *ReconcileDBCluster) setCRUsername(cr *kubev1alpha1.DBCluster, installTy
 	if installType == dbHelpers.CREATE && cr.Spec.CreateClusterSpec.MasterUsername == nil {
 		u := lib.RandStringBytes(9)
 		cr.Spec.CreateClusterSpec.MasterUsername = &u
+		cr.Status.Username = u
 		if err := lib.UpdateCr(r.client, cr); err != nil {
 			logrus.Errorf("Failed to update DBCluster CR while setting up username: %v", err)
 			return err
@@ -77,6 +78,7 @@ func (r *ReconcileDBCluster) setCRPassword(cr *kubev1alpha1.DBCluster, installTy
 	if installType == dbHelpers.CREATE && cr.Spec.CreateClusterSpec.MasterUserPassword == nil {
 		p := lib.RandStringBytes(9)
 		cr.Spec.CreateClusterSpec.MasterUserPassword = &p
+		cr.Status.Password = p
 		if err := lib.UpdateCr(r.client, cr); err != nil {
 			logrus.Errorf("Failed to update DBCluster CR while setting up credentials: %v", err)
 			return err

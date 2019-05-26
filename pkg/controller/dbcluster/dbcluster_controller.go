@@ -143,7 +143,7 @@ func (r *ReconcileDBCluster) Reconcile(request reconcile.Request) (reconcile.Res
 	}
 
 	// create secret
-	if err := r.createSecret(cr); err != nil {
+	if err := r.createSecret(cr); err != nil && !errors.IsForbidden(err) {
 		return reconcile.Result{}, err
 	}
 
