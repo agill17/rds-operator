@@ -30,7 +30,7 @@ spec:
   deleteClusterSpec:
     SkipFinalSnapshot: false
     # DBClusterIdentifier: aurora-postgres ## not required -- will be whatever is set inside createClusterSpec.DBClusterIdentifier
-    # FinalDBSnapshotIdentifier: aurora-postgres-snap ## not required ( will be namespace-crName-timestamp)
+    FinalDBSnapshotIdentifier: aurora-postgres-snap ## not required ( will be namespace-crName-timestamp)
 ---
 apiVersion: agill.apps/v1alpha1
 kind: DBInstance

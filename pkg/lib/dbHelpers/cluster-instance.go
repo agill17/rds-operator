@@ -60,10 +60,10 @@ func (dh *Cluster) Delete() error {
 	exists, _ := lib.DbClusterExists(
 		&lib.RDSGenerics{
 			RDSClient: dh.RDSClient,
-			ClusterID: *dh.CreateInput.DBClusterIdentifier,
+			ClusterID: *dh.DeleteInput.DBClusterIdentifier,
 		},
 	)
-	if !exists {
+	if exists {
 		if _, err := dh.RDSClient.DeleteDBCluster(dh.DeleteInput); err != nil {
 			logrus.Errorf("Failed to delete DB cluster: %v", err)
 			return err
@@ -77,7 +77,7 @@ func (dh *Cluster) Restore() error {
 	exists, _ := lib.DbClusterExists(
 		&lib.RDSGenerics{
 			RDSClient: dh.RDSClient,
-			ClusterID: *dh.CreateInput.DBClusterIdentifier,
+			ClusterID: *dh.RestoreFromSnapInput.DBClusterIdentifier,
 		},
 	)
 	if !exists {
@@ -125,10 +125,10 @@ func (dh *Instance) Delete() error {
 	exists, _ := lib.DBInstanceExists(
 		&lib.RDSGenerics{
 			RDSClient:  dh.RDSClient,
-			InstanceID: *dh.CreateInput.DBInstanceIdentifier,
+			InstanceID: *dh.DeleteInput.DBInstanceIdentifier,
 		},
 	)
-	if !exists {
+	if exists {
 		if _, err := dh.RDSClient.DeleteDBInstance(dh.DeleteInput); err != nil {
 			logrus.Errorf("Failed to delete DB Instance: %v", err)
 			return err
@@ -142,7 +142,7 @@ func (dh *Instance) Restore() error {
 	exists, _ := lib.DBInstanceExists(
 		&lib.RDSGenerics{
 			RDSClient:  dh.RDSClient,
-			InstanceID: *dh.CreateInput.DBInstanceIdentifier,
+			InstanceID: *dh.RestoreFromSnapInput.DBInstanceIdentifier,
 		},
 	)
 	if !exists {
