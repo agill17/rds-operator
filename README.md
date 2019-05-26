@@ -12,6 +12,6 @@
 - Create ( **All RDS Databases**, Subnet groups ) :white_check_mark:
 - Delete ( **All RDS Databases**, Subnet groups ) :white_check_mark:
 - Update ( COMING SOON ) :x:
-- CreateFromRDSSnapshot ( COMING SOON ) :x:
+- Create From RDS Snapshot ( **All RDS Databases** ) :white_check_mark:
 - CreateReadReplica ( COMING SOON ) :x:
 
