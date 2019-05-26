@@ -106,7 +106,7 @@ func (r *ReconcileDBCluster) Reconcile(request reconcile.Request) (reconcile.Res
 		err := r.createItAndUpdateState(cr)
 		if err != nil {
 			switch err.(type) {
-			case lib.ErrorResourceCreatingInProgress:
+			case *lib.ErrorResourceCreatingInProgress:
 				logrus.Warnf("Namespace: %v | CR: %v | Msg: Cluster still in creating phase. Reconciling to check again.", cr.Namespace, cr.Name)
 				return reconcile.Result{Requeue: true}, nil
 			default:

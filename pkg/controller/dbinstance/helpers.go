@@ -26,7 +26,7 @@ func (r *ReconcileDBInstance) dbClusterReady(cr *kubev1alpha1.DBInstance) error 
 	exists, out := lib.DbClusterExists(&lib.RDSGenerics{RDSClient: r.rdsClient, ClusterID: dbClsID})
 	if exists {
 		if strings.ToLower(*out.DBClusters[0].Status) != "available" {
-			return lib.ErrorResourceCreatingInProgress{Message: "ClusterCreatingInProgress"}
+			return &lib.ErrorResourceCreatingInProgress{Message: "ClusterCreatingInProgress"}
 		}
 	}
 
@@ -71,9 +71,9 @@ func (r *ReconcileDBInstance) handlePhases(cr *kubev1alpha1.DBInstance) error {
 	case "available":
 		return nil
 	case "creating", "backing-up", "restoring":
-		return lib.ErrorResourceCreatingInProgress{Message: "InstanceCreatingInProgress"}
+		return &lib.ErrorResourceCreatingInProgress{Message: "InstanceCreatingInProgress"}
 	case "deleting":
-		return lib.ErrorResourceDeletingInProgress{Message: "InstanceDeletingInProgress"}
+		return &lib.ErrorResourceDeletingInProgress{Message: "InstanceDeletingInProgress"}
 	case "":
 		return errors.New("InstanceNotYetInitilaized")
 	}

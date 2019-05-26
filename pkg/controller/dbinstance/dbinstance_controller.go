@@ -111,7 +111,7 @@ func (r *ReconcileDBInstance) Reconcile(request reconcile.Request) (reconcile.Re
 	if !cr.Status.DeployedInitially {
 		if _, err := r.createNewDBInstance(cr); err != nil {
 			switch err.(type) {
-			case lib.ErrorResourceCreatingInProgress:
+			case *lib.ErrorResourceCreatingInProgress:
 				logrus.Warnf("DBInstance not up yet, Reconciling to check again")
 				return reconcile.Result{Requeue: true}, nil
 			default:

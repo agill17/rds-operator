@@ -78,9 +78,9 @@ func (r *ReconcileDBCluster) handlePhases(cr *kubev1alpha1.DBCluster) error {
 	case "available":
 		return nil
 	case "creating", "backing-up":
-		return lib.ErrorResourceCreatingInProgress{Message: "ClusterCreatingInProgress"}
+		return &lib.ErrorResourceCreatingInProgress{Message: "ClusterCreatingInProgress"}
 	case "deleting":
-		return lib.ErrorResourceDeletingInProgress{Message: "ClusterDeletingInProgress"}
+		return &lib.ErrorResourceDeletingInProgress{Message: "ClusterDeletingInProgress"}
 	case "":
 		return errors.New("ClusterNotYetInitilaized")
 	}
