@@ -18,8 +18,9 @@ type DBClusterStatus struct {
 }
 
 type DBClusterSpec struct {
-	CreateClusterSpec *rds.CreateDBClusterInput `json:"createClusterSpec,required"`
-	DeleteSpec        *rds.DeleteDBClusterInput `json:"deleteClusterSpec,required"`
+	CreateClusterSpec         *rds.CreateDBClusterInput              `json:"createClusterSpec,omitempty"`
+	CreateClusterFromSnapshot *rds.RestoreDBClusterFromSnapshotInput `json:"createClusterFromSnapshot,omitempty"`
+	DeleteSpec                *rds.DeleteDBClusterInput              `json:"deleteClusterSpec,required"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

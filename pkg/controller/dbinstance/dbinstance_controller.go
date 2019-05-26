@@ -103,8 +103,8 @@ func (r *ReconcileDBInstance) Reconcile(request reconcile.Request) (reconcile.Re
 	}
 
 	// delete
-	if err := r.handleDeleteEvents(cr, *cr.Spec.CreateInstanceSpec.DBInstanceIdentifier); err != nil {
-		return reconcile.Result{}, err
+	if deletionTimeExists && anyFinalizersExists {
+		return r.handleDeleteEvents(cr, *cr.Spec.CreateInstanceSpec.DBInstanceIdentifier)
 	}
 
 	// create

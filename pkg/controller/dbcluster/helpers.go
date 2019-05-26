@@ -1,25 +1,17 @@
 package dbcluster
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"os/exec"
 	"strings"
 
+	"github.com/agill17/rds-operator/pkg/lib/dbHelpers"
+
 	kubev1alpha1 "github.com/agill17/rds-operator/pkg/apis/agill/v1alpha1"
 	"github.com/agill17/rds-operator/pkg/lib"
 	"github.com/sirupsen/logrus"
 )
-
-func (r *ReconcileDBCluster) updateCrStats(cr *kubev1alpha1.DBCluster) error {
-	err := r.client.Status().Update(context.TODO(), cr)
-	if err != nil {
-		logrus.Errorf("Failed while updating status of DBCluster in namespace: %v -- %v", cr.Namespace, err)
-		return err
-	}
-	return err
-}
 
 func (r *ReconcileDBCluster) getCurrentStatusFromAWS(dbClusterID string) string {
 	exists, out := lib.DbClusterExists(&lib.RDSGenerics{RDSClient: r.rdsClient, ClusterID: dbClusterID})
@@ -60,7 +52,7 @@ func (r *ReconcileDBCluster) updateLocalStatusWithAwsStatus(cr *kubev1alpha1.DBC
 		if currentLocalPhase != strings.ToLower(*out.DBClusters[0].Status) {
 			logrus.Warnf("Updating current phase in CR for namespace: %v", cr.Namespace)
 			cr.Status.CurrentPhase = strings.ToLower(*out.DBClusters[0].Status)
-			if err := r.updateCrStats(cr); err != nil {
+			if err := lib.UpdateCrStatus(r.client, cr); err != nil {
 				return "", err
 			}
 		}
@@ -108,4 +100,16 @@ func validateRequiredInput(cr *kubev1alpha1.DBCluster) error {
 		return errors.New("deleteClusterSpecCannotBeEmptyError")
 	}
 	return nil
+}
+
+func getInstallType(cr *kubev1alpha1.DBCluster) dbHelpers.DBInstallType {
+	if cr.GetDeletionTimestamp() != nil && len(cr.GetFinalizers()) > 0 {
+		return dbHelpers.DELETE
+	} else if cr.Spec.CreateClusterFromSnapshot != nil {
+		return dbHelpers.RESTORE
+	} else if cr.Spec.CreateClusterSpec != nil {
+		return dbHelpers.CREATE
+	}
+
+	return dbHelpers.UNKNOWN
 }

@@ -7,6 +7,7 @@ import (
 
 	"github.com/agill17/rds-operator/pkg/lib"
 	"github.com/sirupsen/logrus"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	// h "cloud.google.com/go/bigquery/benchmarks"
 	kubev1alpha1 "github.com/agill17/rds-operator/pkg/apis/agill/v1alpha1"
@@ -54,12 +55,9 @@ func (r *ReconcileDBInstance) deleteDBInstance(cr *kubev1alpha1.DBInstance, dbID
 	return lib.UpdateCr(r.client, cr)
 }
 
-func (r *ReconcileDBInstance) handleDeleteEvents(cr *kubev1alpha1.DBInstance, dbID string) error {
-	deletionTimeExists := cr.GetDeletionTimestamp() != nil
-	zeroFinalizers := len(cr.GetFinalizers()) == 0
-	if deletionTimeExists && !zeroFinalizers {
-		return r.deleteDBInstance(cr, dbID)
+func (r *ReconcileDBInstance) handleDeleteEvents(cr *kubev1alpha1.DBInstance, dbID string) (reconcile.Result, error) {
+	if err := r.deleteDBInstance(cr, *cr.Spec.CreateInstanceSpec.DBInstanceIdentifier); err != nil {
+		return reconcile.Result{}, err // retry
 	}
-
-	return nil
+	return reconcile.Result{Requeue: false}, nil // do not reque
 }

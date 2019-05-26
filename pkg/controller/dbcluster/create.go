@@ -3,6 +3,8 @@ package dbcluster
 import (
 	"context"
 
+	"github.com/agill17/rds-operator/pkg/lib/dbHelpers"
+
 	kubev1alpha1 "github.com/agill17/rds-operator/pkg/apis/agill/v1alpha1"
 	"github.com/agill17/rds-operator/pkg/lib"
 	"github.com/davecgh/go-spew/spew"
@@ -10,16 +12,12 @@ import (
 	kubeapierror "k8s.io/apimachinery/pkg/api/errors"
 )
 
-func (r *ReconcileDBCluster) createItAndUpdateState(cr *kubev1alpha1.DBCluster) error {
+func (r *ReconcileDBCluster) createItAndUpdateState(cr *kubev1alpha1.DBCluster, cluster *dbHelpers.Cluster) error {
 	var err error
-	var clusterID string
 
-	clusterID = *cr.Spec.CreateClusterSpec.DBClusterIdentifier
-	if exists, _ := lib.DbClusterExists(&lib.RDSGenerics{RDSClient: r.rdsClient, ClusterID: clusterID}); !exists {
-		if err = r.createCluster(cr); err != nil {
-			logrus.Errorf("Something went wrong while creating the db cluster: %v", err)
-			return err
-		}
+	err = dbHelpers.InstallRestoreDelete(cluster, dbHelpers.CREATE)
+	if err != nil {
+		return err
 	}
 
 	// check aws state and return error if not ready/available yet in AWS
@@ -29,7 +27,7 @@ func (r *ReconcileDBCluster) createItAndUpdateState(cr *kubev1alpha1.DBCluster) 
 
 	// once cr phase is available, change the created to true and update status
 	cr.Status.Created = true
-	_, cr.Status.DescriberClusterOutput = lib.DbClusterExists(&lib.RDSGenerics{RDSClient: r.rdsClient, ClusterID: clusterID})
+	_, cr.Status.DescriberClusterOutput = lib.DbClusterExists(&lib.RDSGenerics{RDSClient: r.rdsClient, ClusterID: *cr.Spec.CreateClusterSpec.DBClusterIdentifier})
 	if err := lib.UpdateCrStatus(r.client, cr); err != nil {
 		return err
 	}
@@ -38,18 +36,6 @@ func (r *ReconcileDBCluster) createItAndUpdateState(cr *kubev1alpha1.DBCluster) 
 
 	return nil
 
-}
-
-func (r *ReconcileDBCluster) createCluster(cr *kubev1alpha1.DBCluster) error {
-	var err error
-
-	if _, err = r.rdsClient.CreateDBCluster(cr.Spec.CreateClusterSpec); err != nil {
-		logrus.Errorf("ERROR while creating DB Cluster %v:", err)
-		spew.Dump(cr)
-		return err
-	}
-
-	return nil
 }
 
 func (r *ReconcileDBCluster) createSecret(cr *kubev1alpha1.DBCluster) error {
@@ -61,7 +47,7 @@ func (r *ReconcileDBCluster) createSecret(cr *kubev1alpha1.DBCluster) error {
 		logrus.Warnf("Updating cluster secret in namespace: %v", cr.Namespace)
 		r.client.Update(context.TODO(), secretObj)
 		cr.Status.SecretUpdateNeeded = false
-		return r.updateCrStats(cr)
+		return lib.UpdateCrStatus(r.client, cr)
 	}
 
 	return nil
