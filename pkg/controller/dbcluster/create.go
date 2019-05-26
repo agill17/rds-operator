@@ -1,15 +1,11 @@
 package dbcluster
 
 import (
-	"context"
-
 	"github.com/agill17/rds-operator/pkg/lib/dbHelpers"
 
 	kubev1alpha1 "github.com/agill17/rds-operator/pkg/apis/agill/v1alpha1"
 	"github.com/agill17/rds-operator/pkg/lib"
 	"github.com/davecgh/go-spew/spew"
-	"github.com/sirupsen/logrus"
-	kubeapierror "k8s.io/apimachinery/pkg/api/errors"
 )
 
 func (r *ReconcileDBCluster) createItAndUpdateState(cr *kubev1alpha1.DBCluster, cluster *dbHelpers.Cluster) error {
@@ -36,19 +32,4 @@ func (r *ReconcileDBCluster) createItAndUpdateState(cr *kubev1alpha1.DBCluster, 
 
 	return nil
 
-}
-
-func (r *ReconcileDBCluster) createSecret(cr *kubev1alpha1.DBCluster) error {
-	secretObj := r.getSecretObj(cr)
-	if err := r.client.Create(context.TODO(), secretObj); err != nil && !kubeapierror.IsAlreadyExists(err) {
-		logrus.Errorf("Error while creating secret object: %v", err)
-		return err
-	} else if kubeapierror.IsAlreadyExists(err) && cr.Status.SecretUpdateNeeded {
-		logrus.Warnf("Updating cluster secret in namespace: %v", cr.Namespace)
-		r.client.Update(context.TODO(), secretObj)
-		cr.Status.SecretUpdateNeeded = false
-		return lib.UpdateCrStatus(r.client, cr)
-	}
-
-	return nil
 }

@@ -40,6 +40,17 @@ spec:
           type: object
         spec:
           type: object
+          required: ['deleteClusterSpec']
+          properties:
+            createClusterSpec:
+              type: object
+            deleteClusterSpec:
+              type: object
+            createClusterFromSnapshot:
+              type: object
+          oneOf:
+          - required: ['createClusterSpec']
+          - required: ['createClusterFromSnapshot']
         status:
           type: object
   version: v1alpha1
