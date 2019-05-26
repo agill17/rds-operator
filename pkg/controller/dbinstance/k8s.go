@@ -174,7 +174,7 @@ func (r *ReconcileDBInstance) getSecretFromCluster(cr *kubev1alpha1.DBInstance, 
 
 func (r *ReconcileDBInstance) createExternalNameSvc(cr *kubev1alpha1.DBInstance) error {
 
-	if err := r.client.Create(context.TODO(), r.getSvcObj(cr)); err != nil && !errors.IsAlreadyExists(err) {
+	if err := r.client.Create(context.TODO(), r.getSvcObj(cr)); err != nil && !errors.IsAlreadyExists(err) && !errors.IsForbidden(err) {
 		logrus.Errorf("Namespace: %v | Msg: ERROR while creating RDS Service: %v", cr.Namespace, err)
 		return err
 	}
@@ -184,7 +184,7 @@ func (r *ReconcileDBInstance) createExternalNameSvc(cr *kubev1alpha1.DBInstance)
 
 func (r *ReconcileDBInstance) createSecret(cr *kubev1alpha1.DBInstance) error {
 	secretObj := r.getSecretObj(cr, cr.Status.Username, cr.Status.Password, getSecretName(cr))
-	if err := r.client.Create(context.TODO(), secretObj); err != nil && !errors.IsAlreadyExists(err) {
+	if err := r.client.Create(context.TODO(), secretObj); err != nil && !errors.IsAlreadyExists(err) && !errors.IsForbidden(err) {
 		logrus.Errorf("Error while creating secret object: %v", err)
 		return err
 	}

@@ -51,10 +51,10 @@ func (r *ReconcileDBInstance) createNewDBInstance(cr *kubev1alpha1.DBInstance) (
 func (r *ReconcileDBInstance) waitForClusterIfNeeded(cr *kubev1alpha1.DBInstance) error {
 	var err error
 	dbInsID := *cr.Spec.CreateInstanceSpec.DBInstanceIdentifier
-	dbClsID := *cr.Spec.CreateInstanceSpec.DBClusterIdentifier
 	// when cluster is still not available, this will throw ErrorClusterCreatingInProgress
 	// only run this when this DBInstance is part of a DBCluster
-	if cr.Spec.CreateInstanceSpec.DBInstanceIdentifier != nil && !cr.Status.DBClusterMarkedAvail {
+	if cr.Spec.CreateInstanceSpec.DBClusterIdentifier != nil && !cr.Status.DBClusterMarkedAvail {
+		dbClsID := *cr.Spec.CreateInstanceSpec.DBClusterIdentifier
 		logrus.Infof("Namespace: %v | DB Identifier: %v | Msg: Part of cluster: %v -- checking if its available first", cr.Namespace, dbInsID, dbClsID)
 		err = r.dbClusterReady(cr)
 		if err != nil {
