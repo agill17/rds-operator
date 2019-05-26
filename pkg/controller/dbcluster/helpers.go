@@ -91,7 +91,7 @@ func getClusterSecretName(cr *kubev1alpha1.DBCluster) string {
 }
 
 func validateRequiredInput(cr *kubev1alpha1.DBCluster) error {
-	if cr.Spec.CreateClusterSpec == nil {
+	if cr.Spec.CreateClusterSpec == nil && cr.Spec.CreateClusterFromSnapshot == nil {
 		return errors.New("CreateClusterSpecEmptyError")
 	}
 

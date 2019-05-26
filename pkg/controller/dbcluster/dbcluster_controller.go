@@ -78,7 +78,10 @@ func (r *ReconcileDBCluster) Reconcile(request reconcile.Request) (reconcile.Res
 		return reconcile.Result{}, err
 	}
 
-	if err := r.setUpDefaultsIfNeeded(cr); err != nil {
+	// get install type ( ALWAYS )
+	installType := getInstallType(cr)
+
+	if err := r.setUpDefaultsIfNeeded(cr, installType); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -95,9 +98,6 @@ func (r *ReconcileDBCluster) Reconcile(request reconcile.Request) (reconcile.Res
 			return reconcile.Result{}, err
 		}
 	}
-
-	// get install type ( ALWAYS )
-	installType := getInstallType(cr)
 
 	clusterObj := dbHelpers.Cluster{
 		RDSClient:            r.rdsClient,
