@@ -14,11 +14,11 @@ import (
 
 func (r *ReconcileDBCluster) setUpDefaultsIfNeeded(cr *kubev1alpha1.DBCluster, installType dbHelpers.DBInstallType) error {
 
-	if err := r.setUpCredentialsIfNeeded(cr); err != nil {
+	if err := r.setUpCredentialsIfNeeded(cr, installType); err != nil {
 		return err
 	}
 
-	if err := r.setCRDeleteClusterID(cr); err != nil {
+	if err := r.setCRDeleteClusterID(cr, installType); err != nil {
 		return err
 	}
 
@@ -31,15 +31,18 @@ func (r *ReconcileDBCluster) setUpDefaultsIfNeeded(cr *kubev1alpha1.DBCluster, i
 
 // used when deleteSpec.DBClusterID is not set, than use the one provided within cr.createClusterSpec
 // this is so we can make the clusterID optional in deleteSpec
-func (r *ReconcileDBCluster) setCRDeleteClusterID(cr *kubev1alpha1.DBCluster) error {
-	if cr.Spec.DeleteSpec.DBClusterIdentifier == nil {
-		id := r.getDBClusterIDFromSpec(cr)
+func (r *ReconcileDBCluster) setCRDeleteClusterID(cr *kubev1alpha1.DBCluster, installType dbHelpers.DBInstallType) error {
+	var id string
+	if cr.Spec.DeleteSpec.DBClusterIdentifier == nil || *cr.Spec.DeleteSpec.DBClusterIdentifier == "" {
+		id = getDBClusterID(cr, installType)
+		logrus.Warnf("Setting spec.DeleteClusterSpec.DBClusterIdentifier: %v", id)
 		cr.Spec.DeleteSpec.DBClusterIdentifier = &id
 		if err := lib.UpdateCr(r.client, cr); err != nil {
 			logrus.Errorf("Failed to update DBCluster CR while setting up DeleteSpec.DBClusterIdentifier: %v", err)
 			return err
 		}
 	}
+
 	return nil
 }
 
@@ -47,13 +50,7 @@ func (r *ReconcileDBCluster) setCRDeleteSpecSnapName(cr *kubev1alpha1.DBCluster,
 	var clusterID string
 
 	if !(*cr.Spec.DeleteSpec.SkipFinalSnapshot) && cr.Spec.DeleteSpec.FinalDBSnapshotIdentifier == nil {
-		switch installType {
-		case dbHelpers.CREATE:
-			clusterID = *cr.Spec.CreateClusterSpec.DBClusterIdentifier
-		case dbHelpers.RESTORE:
-			clusterID = *cr.Spec.CreateClusterFromSnapshot.DBClusterIdentifier
-		}
-
+		clusterID = getDBClusterID(cr, installType)
 		currentTime := time.Now().Format("2006-01-02:03-02-44")
 		snashotName := fmt.Sprintf("%v-%v", clusterID, strings.Replace(currentTime, ":", "-", -1))
 		cr.Spec.DeleteSpec.FinalDBSnapshotIdentifier = aws.String(snashotName)
@@ -63,17 +60,9 @@ func (r *ReconcileDBCluster) setCRDeleteSpecSnapName(cr *kubev1alpha1.DBCluster,
 	return nil
 }
 
-func (r *ReconcileDBCluster) getDBClusterIDFromSpec(cr *kubev1alpha1.DBCluster) string {
-	if cr.Spec.CreateClusterSpec != nil {
-		return *cr.Spec.CreateClusterSpec.DBClusterIdentifier
-	} else if cr.Spec.CreateClusterFromSnapshot != nil {
-		return *cr.Spec.CreateClusterFromSnapshot.DBClusterIdentifier
-	}
-	return ""
-}
+func (r *ReconcileDBCluster) setCRUsername(cr *kubev1alpha1.DBCluster, installType dbHelpers.DBInstallType) error {
 
-func (r *ReconcileDBCluster) setCRUsername(cr *kubev1alpha1.DBCluster) error {
-	if cr.Spec.CreateClusterSpec.MasterUsername == nil {
+	if installType == dbHelpers.CREATE && cr.Spec.CreateClusterSpec.MasterUsername == nil {
 		u := lib.RandStringBytes(9)
 		cr.Spec.CreateClusterSpec.MasterUsername = &u
 		if err := lib.UpdateCr(r.client, cr); err != nil {
@@ -84,8 +73,8 @@ func (r *ReconcileDBCluster) setCRUsername(cr *kubev1alpha1.DBCluster) error {
 	return nil
 }
 
-func (r *ReconcileDBCluster) setCRPassword(cr *kubev1alpha1.DBCluster) error {
-	if cr.Spec.CreateClusterSpec.MasterUserPassword == nil {
+func (r *ReconcileDBCluster) setCRPassword(cr *kubev1alpha1.DBCluster, installType dbHelpers.DBInstallType) error {
+	if installType == dbHelpers.CREATE && cr.Spec.CreateClusterSpec.MasterUserPassword == nil {
 		p := lib.RandStringBytes(9)
 		cr.Spec.CreateClusterSpec.MasterUserPassword = &p
 		if err := lib.UpdateCr(r.client, cr); err != nil {
@@ -96,12 +85,12 @@ func (r *ReconcileDBCluster) setCRPassword(cr *kubev1alpha1.DBCluster) error {
 	return nil
 }
 
-func (r *ReconcileDBCluster) setUpCredentialsIfNeeded(cr *kubev1alpha1.DBCluster) error {
-	if err := r.setCRUsername(cr); err != nil {
+func (r *ReconcileDBCluster) setUpCredentialsIfNeeded(cr *kubev1alpha1.DBCluster, installType dbHelpers.DBInstallType) error {
+	if err := r.setCRUsername(cr, installType); err != nil {
 		return err
 	}
 
-	if err := r.setCRPassword(cr); err != nil {
+	if err := r.setCRPassword(cr, installType); err != nil {
 		return err
 	}
 

@@ -43,9 +43,9 @@ func getLatestClusterSnapID(clusterDBID, ns, region string) (string, error) {
 	return strings.TrimSpace(string(snapID)), err
 }
 
-func (r *ReconcileDBCluster) updateLocalStatusWithAwsStatus(cr *kubev1alpha1.DBCluster) (string, error) {
+func (r *ReconcileDBCluster) updateLocalStatusWithAwsStatus(cr *kubev1alpha1.DBCluster, clusterID string) (string, error) {
 
-	exists, out := lib.DbClusterExists(&lib.RDSGenerics{RDSClient: r.rdsClient, ClusterID: *cr.Spec.CreateClusterSpec.DBClusterIdentifier})
+	exists, out := lib.DbClusterExists(&lib.RDSGenerics{RDSClient: r.rdsClient, ClusterID: clusterID})
 	currentLocalPhase := cr.Status.CurrentPhase
 
 	if exists {
@@ -64,10 +64,10 @@ func (r *ReconcileDBCluster) updateLocalStatusWithAwsStatus(cr *kubev1alpha1.DBC
 
 }
 
-func (r *ReconcileDBCluster) handlePhases(cr *kubev1alpha1.DBCluster) error {
+func (r *ReconcileDBCluster) handlePhases(cr *kubev1alpha1.DBCluster, clusterID string) error {
 
 	// always update first before checking ( so restore and delete can be handled )
-	currentPhase, _ := r.updateLocalStatusWithAwsStatus(cr)
+	currentPhase, _ := r.updateLocalStatusWithAwsStatus(cr, clusterID)
 
 	switch currentPhase {
 	case "available":
@@ -122,7 +122,7 @@ func (r *ReconcileDBCluster) createSecret(cr *kubev1alpha1.DBCluster) error {
 	if err := r.client.Create(context.TODO(), secretObj); err != nil && !kubeapierror.IsAlreadyExists(err) {
 		logrus.Errorf("Error while creating secret object: %v", err)
 		return err
-	} else if kubeapierror.IsAlreadyExists(err) && cr.Status.SecretUpdateNeeded {
+	} else if kubeapierror.IsAlreadyExists(err) {
 		logrus.Warnf("Updating cluster secret in namespace: %v", cr.Namespace)
 		r.client.Update(context.TODO(), secretObj)
 		cr.Status.SecretUpdateNeeded = false
@@ -130,4 +130,20 @@ func (r *ReconcileDBCluster) createSecret(cr *kubev1alpha1.DBCluster) error {
 	}
 
 	return nil
+}
+
+func getDBClusterID(cr *kubev1alpha1.DBCluster, installType dbHelpers.DBInstallType) string {
+	switch installType {
+	case dbHelpers.CREATE:
+		return *cr.Spec.CreateClusterSpec.DBClusterIdentifier
+	case dbHelpers.RESTORE:
+		return *cr.Spec.CreateClusterFromSnapshot.DBClusterIdentifier
+	case dbHelpers.DELETE:
+		if cr.Spec.CreateClusterFromSnapshot != nil {
+			return *cr.Spec.CreateClusterFromSnapshot.DBClusterIdentifier
+		} else if cr.Spec.CreateClusterSpec != nil {
+			return *cr.Spec.CreateClusterSpec.DBClusterIdentifier
+		}
+	}
+	return ""
 }

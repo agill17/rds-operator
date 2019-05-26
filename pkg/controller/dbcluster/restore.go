@@ -23,14 +23,12 @@ func (r *ReconcileDBCluster) restoreAndUpdateState(cr *kubev1alpha1.DBCluster, c
 	}
 
 	// handle restoring/creating and reconcile if still creating
-	if err := r.handlePhases(cr); err != nil {
+	if err := r.handlePhases(cr, *cr.Spec.CreateClusterFromSnapshot.DBClusterIdentifier); err != nil {
 		return err
 	}
-
+	cr.Status.Created = true
 	cr.Status.RestoredFromSnapshotName = *cluster.RestoreFromSnapInput.SnapshotIdentifier
-	cr.Status.SecretUpdateNeeded = true
-	cr.Status.RestoreNeeded = false
 	_, cr.Status.DescriberClusterOutput = lib.DbClusterExists(
-		&lib.RDSGenerics{ClusterID: *cluster.CreateInput.DBClusterIdentifier, RDSClient: r.rdsClient})
+		&lib.RDSGenerics{ClusterID: *cluster.RestoreFromSnapInput.DBClusterIdentifier, RDSClient: r.rdsClient})
 	return lib.UpdateCrStatus(r.client, cr)
 }

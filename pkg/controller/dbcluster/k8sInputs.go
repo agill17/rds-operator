@@ -22,8 +22,8 @@ func (r *ReconcileDBCluster) getSecretObj(cr *kubev1alpha1.DBCluster) *v1.Secret
 		},
 		Type: v1.SecretType("Opaque"),
 		Data: map[string][]byte{
-			"DATABASE_ID":             []byte(*cr.Spec.CreateClusterSpec.DBClusterIdentifier),
-			"DATABASE_NAME":           []byte(*cr.Spec.CreateClusterSpec.DatabaseName),
+			"DATABASE_ID":             []byte(*cr.Status.DescriberClusterOutput.DBClusters[0].DBClusterIdentifier),
+			"DATABASE_NAME":           []byte(*cr.Status.DescriberClusterOutput.DBClusters[0].DatabaseName),
 			"ClUSTER_ENDPOINT":        []byte(*cr.Status.DescriberClusterOutput.DBClusters[0].Endpoint),
 			"CLUSTER_READER_ENDPOINT": []byte(*cr.Status.DescriberClusterOutput.DBClusters[0].ReaderEndpoint),
 			"DATABASE_USERNAME":       []byte(cr.Status.Username),

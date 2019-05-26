@@ -1,0 +1,53 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: amrit-restore
+---
+apiVersion: agill.apps/v1alpha1
+kind: DBCluster
+metadata:
+  name: aurora-cluster
+  namespace: amrit-restore
+clusterSecretName: cluster-secret # not required ( defaults to metadata.name-secret )
+region: us-east-1
+spec:
+  createClusterFromSnapshot:
+    AvailabilityZones:
+      - us-east-1a
+      - us-east-1b
+    DBClusterIdentifier: amrit-restore-aurora-cluster
+    DatabaseName: test
+    Engine: aurora-mysql
+    EngineMode: provisioned
+    EngineVersion: 5.7.12
+    SnapshotIdentifier: amrit-aurora-cluster-2019-05-26-01-26-2121
+  deleteClusterSpec:
+    SkipFinalSnapshot: false
+    DBClusterIdentifier: amrit-restore-aurora-cluster ## not required -- will be whatever is set inside createClusterSpec.DBClusterIdentifier
+    # FinalDBSnapshotIdentifier: amrit-restore-aurora-cluster-snap ## not required ( will be namespace-crName-timestamp)
+
+---
+apiVersion: agill.apps/v1alpha1
+kind: DBInstance
+metadata:
+  name: aurora-instance
+  namespace: amrit-restore
+spec:
+  serviceName: rds-instance-endpoint
+  createInstanceSpec:
+    ## all available create fields
+    # https://docs.aws.amazon.com/sdk-for-go/api/service/rds/#CreateDBInstanceInput
+    AutoMinorVersionUpgrade: false
+    CopyTagsToSnapshot: true
+    DBClusterIdentifier: amrit-restore-aurora-cluster
+    DBInstanceIdentifier: amrit-restore-aurora-instance
+    AvailabilityZone: us-east-1a
+    Engine: aurora-mysql
+    MultiAZ: false
+    PubliclyAccessible: true
+    EngineVersion: 5.7.12
+    DBInstanceClass: db.t2.small
+  deleteInstanceSpec:
+    DeleteAutomatedBackups: false
+    SkipFinalSnapshot: false 
+

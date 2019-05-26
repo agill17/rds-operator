@@ -17,7 +17,7 @@ func (r *ReconcileDBCluster) createItAndUpdateState(cr *kubev1alpha1.DBCluster, 
 	}
 
 	// check aws state and return error if not ready/available yet in AWS
-	if err := r.handlePhases(cr); err != nil {
+	if err := r.handlePhases(cr, *cr.Spec.CreateClusterSpec.DBClusterIdentifier); err != nil {
 		return err
 	}
 

@@ -8,7 +8,6 @@ import (
 
 type DBClusterStatus struct {
 	Created                  bool                          `json:"created"`
-	RestoreNeeded            bool                          `json:"restoreNeeded"`
 	DescriberClusterOutput   *rds.DescribeDBClustersOutput `json:"describeClusterOutput"`
 	RestoredFromSnapshotName string                        `json:"restoredFromSnapshotName"`
 	SecretUpdateNeeded       bool                          `json:"secretUpdateNeeded"`

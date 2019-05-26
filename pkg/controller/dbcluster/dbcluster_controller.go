@@ -106,22 +106,23 @@ func (r *ReconcileDBCluster) Reconcile(request reconcile.Request) (reconcile.Res
 		RestoreFromSnapInput: cr.Spec.CreateClusterFromSnapshot,
 	}
 
-	if installType == dbHelpers.DELETE {
-		// delete
-		if deletionTimeExists && anyFinalizersExists {
-			err := dbHelpers.InstallRestoreDelete(&clusterObj, installType)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-			cr.SetFinalizers([]string{})
-			if err := lib.UpdateCr(r.client, cr); err != nil {
-				return reconcile.Result{}, err
-			}
-			return reconcile.Result{}, nil
+	// delete
+	if deletionTimeExists && anyFinalizersExists {
+		err := dbHelpers.InstallRestoreDelete(&clusterObj, installType)
+		if err != nil {
+			return reconcile.Result{}, err
 		}
-	} else if installType == dbHelpers.CREATE {
-		// create cluster
-		if !cr.Status.Created {
+		cr.SetFinalizers([]string{})
+		if err := lib.UpdateCr(r.client, cr); err != nil {
+			return reconcile.Result{}, err
+		}
+		return reconcile.Result{}, nil
+	}
+
+	if !cr.Status.Created {
+
+		if installType == dbHelpers.CREATE {
+			// create cluster
 			err := r.createItAndUpdateState(cr, &clusterObj)
 			if err != nil {
 				switch err.(type) {
@@ -132,12 +133,12 @@ func (r *ReconcileDBCluster) Reconcile(request reconcile.Request) (reconcile.Res
 					return reconcile.Result{}, err
 				}
 			}
-		}
-	} else if installType == dbHelpers.RESTORE {
-		// create from snapshot
-		logrus.Infof("Recreate cluster requested for namespace: %v", cr.Namespace)
-		if err := r.restoreAndUpdateState(cr, &clusterObj); err != nil {
-			return reconcile.Result{}, err
+		} else if installType == dbHelpers.RESTORE {
+			// create from snapshot
+			logrus.Infof("Recreate cluster requested for namespace: %v", cr.Namespace)
+			if err := r.restoreAndUpdateState(cr, &clusterObj); err != nil {
+				return reconcile.Result{}, err
+			}
 		}
 	}
 
