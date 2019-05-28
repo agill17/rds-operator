@@ -1,8 +1,6 @@
 package dbcluster
 
 import (
-	"errors"
-
 	"github.com/agill17/rds-operator/pkg/rdsLib"
 
 	kubev1alpha1 "github.com/agill17/rds-operator/pkg/apis/agill/v1alpha1"
@@ -10,12 +8,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func (r *ReconcileDBCluster) restoreAndUpdateState(cr *kubev1alpha1.DBCluster, cluster *rdsLib.Cluster) error {
-
-	if cluster.RestoreFromSnapInput.SnapshotIdentifier == nil ||
-		cluster.RestoreFromSnapInput.DBClusterIdentifier == nil {
-		return errors.New("RestoreDBClusterInsufficientParameterError")
-	}
+func (r *ReconcileDBCluster) restoreAndUpdateState(cr *kubev1alpha1.DBCluster, cluster rdsLib.RDS) error {
 
 	err := rdsLib.InstallRestoreDelete(cluster, rdsLib.RESTORE)
 	if err != nil {
@@ -28,8 +21,8 @@ func (r *ReconcileDBCluster) restoreAndUpdateState(cr *kubev1alpha1.DBCluster, c
 		return err
 	}
 	cr.Status.Created = true
-	cr.Status.RestoredFromSnapshotName = *cluster.RestoreFromSnapInput.SnapshotIdentifier
+	cr.Status.RestoredFromSnapshotName = *cr.Spec.CreateClusterFromSnapshot.SnapshotIdentifier
 	_, cr.Status.DescriberClusterOutput = lib.DbClusterExists(
-		&lib.RDSGenerics{ClusterID: *cluster.RestoreFromSnapInput.DBClusterIdentifier, RDSClient: r.rdsClient})
+		&lib.RDSGenerics{ClusterID: *cr.Spec.CreateClusterFromSnapshot.DBClusterIdentifier, RDSClient: r.rdsClient})
 	return lib.UpdateCrStatus(r.client, cr)
 }

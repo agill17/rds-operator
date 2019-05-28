@@ -8,7 +8,7 @@ import (
 	"github.com/davecgh/go-spew/spew"
 )
 
-func (r *ReconcileDBCluster) createItAndUpdateState(cr *kubev1alpha1.DBCluster, cluster *rdsLib.Cluster) error {
+func (r *ReconcileDBCluster) createItAndUpdateState(cr *kubev1alpha1.DBCluster, cluster rdsLib.RDS) error {
 	var err error
 
 	err = rdsLib.InstallRestoreDelete(cluster, rdsLib.CREATE)
@@ -23,7 +23,9 @@ func (r *ReconcileDBCluster) createItAndUpdateState(cr *kubev1alpha1.DBCluster, 
 
 	// once cr phase is available, change the created to true and update status
 	cr.Status.Created = true
-	_, cr.Status.DescriberClusterOutput = lib.DbClusterExists(&lib.RDSGenerics{RDSClient: r.rdsClient, ClusterID: *cr.Spec.CreateClusterSpec.DBClusterIdentifier})
+	_, cr.Status.DescriberClusterOutput = lib.DbClusterExists(
+		&lib.RDSGenerics{RDSClient: r.rdsClient,
+			ClusterID: *cr.Spec.CreateClusterSpec.DBClusterIdentifier})
 	if err := lib.UpdateCrStatus(r.client, cr); err != nil {
 		return err
 	}

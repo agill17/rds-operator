@@ -100,16 +100,14 @@ func (r *ReconcileDBCluster) Reconcile(request reconcile.Request) (reconcile.Res
 		}
 	}
 
-	clusterObj := rdsLib.Cluster{
-		RDSClient:            r.rdsClient,
-		CreateInput:          cr.Spec.CreateClusterSpec,
-		DeleteInput:          cr.Spec.DeleteSpec,
-		RestoreFromSnapInput: cr.Spec.CreateClusterFromSnapshot,
-	}
+	// returns RDS interface type.
+	// cluster obj implements and satifies RDS interface
+	clusterObj := rdsLib.NewCluster(r.rdsClient, cr.Spec.CreateClusterSpec,
+		cr.Spec.DeleteSpec, cr.Spec.CreateClusterFromSnapshot)
 
 	// delete
 	if deletionTimeExists && anyFinalizersExists {
-		err := rdsLib.InstallRestoreDelete(&clusterObj, installType)
+		err := rdsLib.InstallRestoreDelete(clusterObj, installType)
 		if err != nil {
 			return reconcile.Result{}, err
 		}
@@ -117,14 +115,14 @@ func (r *ReconcileDBCluster) Reconcile(request reconcile.Request) (reconcile.Res
 		if err := lib.UpdateCr(r.client, cr); err != nil {
 			return reconcile.Result{}, err
 		}
-		return reconcile.Result{}, nil
+		return reconcile.Result{Requeue: false}, nil
 	}
 
 	if !cr.Status.Created {
 
 		if installType == rdsLib.CREATE {
 			// create cluster
-			err := r.createItAndUpdateState(cr, &clusterObj)
+			err := r.createItAndUpdateState(cr, clusterObj)
 			if err != nil {
 				switch err.(type) {
 				case *lib.ErrorResourceCreatingInProgress:
@@ -137,7 +135,7 @@ func (r *ReconcileDBCluster) Reconcile(request reconcile.Request) (reconcile.Res
 		} else if installType == rdsLib.RESTORE {
 			// create from snapshot
 			logrus.Infof("Recreate cluster requested for namespace: %v", cr.Namespace)
-			if err := r.restoreAndUpdateState(cr, &clusterObj); err != nil {
+			if err := r.restoreAndUpdateState(cr, clusterObj); err != nil {
 				return reconcile.Result{}, err
 			}
 		}
