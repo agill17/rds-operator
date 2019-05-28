@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/agill17/rds-operator/pkg/lib/dbHelpers"
+	"github.com/agill17/rds-operator/pkg/rdsLib"
 
 	kubev1alpha1 "github.com/agill17/rds-operator/pkg/apis/agill/v1alpha1"
 	"github.com/agill17/rds-operator/pkg/lib"
@@ -103,16 +103,16 @@ func validateRequiredInput(cr *kubev1alpha1.DBCluster) error {
 	return nil
 }
 
-func getInstallType(cr *kubev1alpha1.DBCluster) dbHelpers.DBInstallType {
+func getInstallType(cr *kubev1alpha1.DBCluster) rdsLib.RDSAction {
 	if cr.GetDeletionTimestamp() != nil && len(cr.GetFinalizers()) > 0 {
-		return dbHelpers.DELETE
+		return rdsLib.DELETE
 	} else if cr.Spec.CreateClusterFromSnapshot != nil {
-		return dbHelpers.RESTORE
+		return rdsLib.RESTORE
 	} else if cr.Spec.CreateClusterSpec != nil {
-		return dbHelpers.CREATE
+		return rdsLib.CREATE
 	}
 
-	return dbHelpers.UNKNOWN
+	return rdsLib.UNKNOWN
 }
 
 func (r *ReconcileDBCluster) createSecret(cr *kubev1alpha1.DBCluster) error {
@@ -125,13 +125,13 @@ func (r *ReconcileDBCluster) createSecret(cr *kubev1alpha1.DBCluster) error {
 	return nil
 }
 
-func getDBClusterID(cr *kubev1alpha1.DBCluster, installType dbHelpers.DBInstallType) string {
+func getDBClusterID(cr *kubev1alpha1.DBCluster, installType rdsLib.RDSAction) string {
 	switch installType {
-	case dbHelpers.CREATE:
+	case rdsLib.CREATE:
 		return *cr.Spec.CreateClusterSpec.DBClusterIdentifier
-	case dbHelpers.RESTORE:
+	case rdsLib.RESTORE:
 		return *cr.Spec.CreateClusterFromSnapshot.DBClusterIdentifier
-	case dbHelpers.DELETE:
+	case rdsLib.DELETE:
 		if cr.Spec.CreateClusterFromSnapshot != nil {
 			return *cr.Spec.CreateClusterFromSnapshot.DBClusterIdentifier
 		} else if cr.Spec.CreateClusterSpec != nil {

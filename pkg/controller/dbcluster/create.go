@@ -1,17 +1,17 @@
 package dbcluster
 
 import (
-	"github.com/agill17/rds-operator/pkg/lib/dbHelpers"
+	"github.com/agill17/rds-operator/pkg/rdsLib"
 
 	kubev1alpha1 "github.com/agill17/rds-operator/pkg/apis/agill/v1alpha1"
 	"github.com/agill17/rds-operator/pkg/lib"
 	"github.com/davecgh/go-spew/spew"
 )
 
-func (r *ReconcileDBCluster) createItAndUpdateState(cr *kubev1alpha1.DBCluster, cluster *dbHelpers.Cluster) error {
+func (r *ReconcileDBCluster) createItAndUpdateState(cr *kubev1alpha1.DBCluster, cluster *rdsLib.Cluster) error {
 	var err error
 
-	err = dbHelpers.InstallRestoreDelete(cluster, dbHelpers.CREATE)
+	err = rdsLib.InstallRestoreDelete(cluster, rdsLib.CREATE)
 	if err != nil {
 		return err
 	}

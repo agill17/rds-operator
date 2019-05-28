@@ -3,20 +3,21 @@ package dbcluster
 import (
 	"errors"
 
+	"github.com/agill17/rds-operator/pkg/rdsLib"
+
 	kubev1alpha1 "github.com/agill17/rds-operator/pkg/apis/agill/v1alpha1"
 	"github.com/agill17/rds-operator/pkg/lib"
-	"github.com/agill17/rds-operator/pkg/lib/dbHelpers"
 	"github.com/sirupsen/logrus"
 )
 
-func (r *ReconcileDBCluster) restoreAndUpdateState(cr *kubev1alpha1.DBCluster, cluster *dbHelpers.Cluster) error {
+func (r *ReconcileDBCluster) restoreAndUpdateState(cr *kubev1alpha1.DBCluster, cluster *rdsLib.Cluster) error {
 
 	if cluster.RestoreFromSnapInput.SnapshotIdentifier == nil ||
 		cluster.RestoreFromSnapInput.DBClusterIdentifier == nil {
 		return errors.New("RestoreDBClusterInsufficientParameterError")
 	}
 
-	err := dbHelpers.InstallRestoreDelete(cluster, dbHelpers.RESTORE)
+	err := rdsLib.InstallRestoreDelete(cluster, rdsLib.RESTORE)
 	if err != nil {
 		logrus.Errorf("Error while re-healing db cluster instance from snapshot: %v", err)
 		return err

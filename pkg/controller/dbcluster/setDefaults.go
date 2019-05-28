@@ -5,24 +5,25 @@ import (
 	"strings"
 	"time"
 
+	"github.com/agill17/rds-operator/pkg/rdsLib"
+
 	kubev1alpha1 "github.com/agill17/rds-operator/pkg/apis/agill/v1alpha1"
 	"github.com/agill17/rds-operator/pkg/lib"
-	"github.com/agill17/rds-operator/pkg/lib/dbHelpers"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/sirupsen/logrus"
 )
 
-func (r *ReconcileDBCluster) setUpDefaultsIfNeeded(cr *kubev1alpha1.DBCluster, installType dbHelpers.DBInstallType) error {
+func (r *ReconcileDBCluster) setUpDefaultsIfNeeded(cr *kubev1alpha1.DBCluster, rdsAction rdsLib.RDSAction) error {
 
-	if err := r.setUpCredentialsIfNeeded(cr, installType); err != nil {
+	if err := r.setUpCredentialsIfNeeded(cr, rdsAction); err != nil {
 		return err
 	}
 
-	if err := r.setCRDeleteClusterID(cr, installType); err != nil {
+	if err := r.setCRDeleteClusterID(cr, rdsAction); err != nil {
 		return err
 	}
 
-	if err := r.setCRDeleteSpecSnapName(cr, installType); err != nil {
+	if err := r.setCRDeleteSpecSnapName(cr, rdsAction); err != nil {
 		return err
 	}
 
@@ -31,10 +32,10 @@ func (r *ReconcileDBCluster) setUpDefaultsIfNeeded(cr *kubev1alpha1.DBCluster, i
 
 // used when deleteSpec.DBClusterID is not set, than use the one provided within cr.createClusterSpec
 // this is so we can make the clusterID optional in deleteSpec
-func (r *ReconcileDBCluster) setCRDeleteClusterID(cr *kubev1alpha1.DBCluster, installType dbHelpers.DBInstallType) error {
+func (r *ReconcileDBCluster) setCRDeleteClusterID(cr *kubev1alpha1.DBCluster, rdsAction rdsLib.RDSAction) error {
 	var id string
 	if cr.Spec.DeleteSpec.DBClusterIdentifier == nil || *cr.Spec.DeleteSpec.DBClusterIdentifier == "" {
-		id = getDBClusterID(cr, installType)
+		id = getDBClusterID(cr, rdsAction)
 		logrus.Warnf("Setting spec.DeleteClusterSpec.DBClusterIdentifier: %v", id)
 		cr.Spec.DeleteSpec.DBClusterIdentifier = &id
 		if err := lib.UpdateCr(r.client, cr); err != nil {
@@ -46,11 +47,11 @@ func (r *ReconcileDBCluster) setCRDeleteClusterID(cr *kubev1alpha1.DBCluster, in
 	return nil
 }
 
-func (r *ReconcileDBCluster) setCRDeleteSpecSnapName(cr *kubev1alpha1.DBCluster, installType dbHelpers.DBInstallType) error {
+func (r *ReconcileDBCluster) setCRDeleteSpecSnapName(cr *kubev1alpha1.DBCluster, rdsAction rdsLib.RDSAction) error {
 	var clusterID string
 
 	if !(*cr.Spec.DeleteSpec.SkipFinalSnapshot) && cr.Spec.DeleteSpec.FinalDBSnapshotIdentifier == nil {
-		clusterID = getDBClusterID(cr, installType)
+		clusterID = getDBClusterID(cr, rdsAction)
 		currentTime := time.Now().Format("2006-01-02:03-02-44")
 		snashotName := fmt.Sprintf("%v-%v", clusterID, strings.Replace(currentTime, ":", "-", -1))
 		cr.Spec.DeleteSpec.FinalDBSnapshotIdentifier = aws.String(snashotName)
@@ -60,9 +61,9 @@ func (r *ReconcileDBCluster) setCRDeleteSpecSnapName(cr *kubev1alpha1.DBCluster,
 	return nil
 }
 
-func (r *ReconcileDBCluster) setCRUsername(cr *kubev1alpha1.DBCluster, installType dbHelpers.DBInstallType) error {
+func (r *ReconcileDBCluster) setCRUsername(cr *kubev1alpha1.DBCluster, rdsAction rdsLib.RDSAction) error {
 
-	if installType == dbHelpers.CREATE && cr.Spec.CreateClusterSpec.MasterUsername == nil {
+	if rdsAction == rdsLib.CREATE && cr.Spec.CreateClusterSpec.MasterUsername == nil {
 		u := lib.RandStringBytes(9)
 		cr.Spec.CreateClusterSpec.MasterUsername = &u
 		cr.Status.Username = u
@@ -74,8 +75,8 @@ func (r *ReconcileDBCluster) setCRUsername(cr *kubev1alpha1.DBCluster, installTy
 	return nil
 }
 
-func (r *ReconcileDBCluster) setCRPassword(cr *kubev1alpha1.DBCluster, installType dbHelpers.DBInstallType) error {
-	if installType == dbHelpers.CREATE && cr.Spec.CreateClusterSpec.MasterUserPassword == nil {
+func (r *ReconcileDBCluster) setCRPassword(cr *kubev1alpha1.DBCluster, rdsAction rdsLib.RDSAction) error {
+	if rdsAction == rdsLib.CREATE && cr.Spec.CreateClusterSpec.MasterUserPassword == nil {
 		p := lib.RandStringBytes(9)
 		cr.Spec.CreateClusterSpec.MasterUserPassword = &p
 		cr.Status.Password = p
@@ -87,12 +88,12 @@ func (r *ReconcileDBCluster) setCRPassword(cr *kubev1alpha1.DBCluster, installTy
 	return nil
 }
 
-func (r *ReconcileDBCluster) setUpCredentialsIfNeeded(cr *kubev1alpha1.DBCluster, installType dbHelpers.DBInstallType) error {
-	if err := r.setCRUsername(cr, installType); err != nil {
+func (r *ReconcileDBCluster) setUpCredentialsIfNeeded(cr *kubev1alpha1.DBCluster, rdsAction rdsLib.RDSAction) error {
+	if err := r.setCRUsername(cr, rdsAction); err != nil {
 		return err
 	}
 
-	if err := r.setCRPassword(cr, installType); err != nil {
+	if err := r.setCRPassword(cr, rdsAction); err != nil {
 		return err
 	}
 

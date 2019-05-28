@@ -3,11 +3,12 @@ package dbcluster
 import (
 	"context"
 
+	"github.com/agill17/rds-operator/pkg/rdsLib"
+
 	"github.com/aws/aws-sdk-go/service/rds"
 	"github.com/sirupsen/logrus"
 
 	"github.com/agill17/rds-operator/pkg/lib"
-	"github.com/agill17/rds-operator/pkg/lib/dbHelpers"
 
 	kubev1alpha1 "github.com/agill17/rds-operator/pkg/apis/agill/v1alpha1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -99,7 +100,7 @@ func (r *ReconcileDBCluster) Reconcile(request reconcile.Request) (reconcile.Res
 		}
 	}
 
-	clusterObj := dbHelpers.Cluster{
+	clusterObj := rdsLib.Cluster{
 		RDSClient:            r.rdsClient,
 		CreateInput:          cr.Spec.CreateClusterSpec,
 		DeleteInput:          cr.Spec.DeleteSpec,
@@ -108,7 +109,7 @@ func (r *ReconcileDBCluster) Reconcile(request reconcile.Request) (reconcile.Res
 
 	// delete
 	if deletionTimeExists && anyFinalizersExists {
-		err := dbHelpers.InstallRestoreDelete(&clusterObj, installType)
+		err := rdsLib.InstallRestoreDelete(&clusterObj, installType)
 		if err != nil {
 			return reconcile.Result{}, err
 		}
@@ -121,7 +122,7 @@ func (r *ReconcileDBCluster) Reconcile(request reconcile.Request) (reconcile.Res
 
 	if !cr.Status.Created {
 
-		if installType == dbHelpers.CREATE {
+		if installType == rdsLib.CREATE {
 			// create cluster
 			err := r.createItAndUpdateState(cr, &clusterObj)
 			if err != nil {
@@ -133,7 +134,7 @@ func (r *ReconcileDBCluster) Reconcile(request reconcile.Request) (reconcile.Res
 					return reconcile.Result{}, err
 				}
 			}
-		} else if installType == dbHelpers.RESTORE {
+		} else if installType == rdsLib.RESTORE {
 			// create from snapshot
 			logrus.Infof("Recreate cluster requested for namespace: %v", cr.Namespace)
 			if err := r.restoreAndUpdateState(cr, &clusterObj); err != nil {
