@@ -40,11 +40,12 @@ func (dh *cluster) Create() error {
 // Delete Cluster
 func (dh *cluster) Delete() error {
 
-	if !dh.clusterExists() {
+	if dh.clusterExists() {
 		if _, err := dh.rdsClient.DeleteDBCluster(dh.deleteInput); err != nil {
 			logrus.Errorf("Failed to delete DB cluster: %v", err)
 			return err
 		}
+		logrus.Warnf("Successfully Deleted DB Cluster: %v", *dh.deleteInput.DBClusterIdentifier)
 	}
 	return nil
 }

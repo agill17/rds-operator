@@ -88,11 +88,11 @@ func (r *ReconcileDBCluster) Reconcile(request reconcile.Request) (reconcile.Res
 
 	// set up finalizers
 	currentFinalizers := cr.GetFinalizers()
-	anyFinalizersExists := len(currentFinalizers) > 0
+	zeroFinalizers := len(currentFinalizers) == 0
 	deletionTimeExists := cr.DeletionTimestamp != nil
 
 	// add finalizers
-	if !deletionTimeExists && !anyFinalizersExists {
+	if !deletionTimeExists && zeroFinalizers {
 		currentFinalizers = append(currentFinalizers, lib.DBClusterFinalizer)
 		cr.SetFinalizers(currentFinalizers)
 		if err := lib.UpdateCr(r.client, cr); err != nil {
@@ -106,8 +106,9 @@ func (r *ReconcileDBCluster) Reconcile(request reconcile.Request) (reconcile.Res
 		cr.Spec.DeleteSpec, cr.Spec.CreateClusterFromSnapshot)
 
 	// delete
-	if deletionTimeExists && anyFinalizersExists {
-		err := rdsLib.InstallRestoreDelete(clusterObj, installType)
+	if deletionTimeExists && !zeroFinalizers {
+		logrus.Warnf("Namespace: %v | CLuster CR: %v | Delete Event detected", cr.Namespace, cr.Name)
+		err := rdsLib.InstallRestoreDelete(clusterObj, rdsLib.DELETE)
 		if err != nil {
 			return reconcile.Result{}, err
 		}
@@ -142,7 +143,7 @@ func (r *ReconcileDBCluster) Reconcile(request reconcile.Request) (reconcile.Res
 	}
 
 	// create secret
-	if err := r.createSecret(cr); err != nil && !errors.IsForbidden(err) {
+	if err := r.createSecret(cr, installType); err != nil && !errors.IsForbidden(err) {
 		return reconcile.Result{}, err
 	}
 

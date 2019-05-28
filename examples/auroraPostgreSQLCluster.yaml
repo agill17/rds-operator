@@ -6,7 +6,7 @@ metadata:
 apiVersion: agill.apps/v1alpha1
 kind: DBCluster
 metadata:
-  name: aurora-cluster
+  name: agill-postgress
   namespace: agill
 clusterSecretName: cluster-secret # not required ( defaults to metadata.name-secret )
 region: us-east-1
@@ -18,7 +18,7 @@ spec:
       - us-east-1a
       - us-east-1b
     BackupRetentionPeriod: 1
-    DBClusterIdentifier: aurora-postgres ## required
+    DBClusterIdentifier: agill-postgress ## required
     DatabaseName: test
     DeletionProtection: false
     Engine: "aurora-postgresql"
@@ -28,9 +28,9 @@ spec:
     # MasterUserPassword: password # not required ( generates a random one if not passed )
     StorageEncrypted: false
   deleteClusterSpec:
-    SkipFinalSnapshot: false
+    SkipFinalSnapshot: true
     # DBClusterIdentifier: aurora-postgres ## not required -- will be whatever is set inside createClusterSpec.DBClusterIdentifier
-    FinalDBSnapshotIdentifier: aurora-postgres-snap ## not required ( will be namespace-crName-timestamp)
+    # FinalDBSnapshotIdentifier: aurora-postgres-snap ## not required ( will be namespace-crName-timestamp)
 # ---
 # apiVersion: agill.apps/v1alpha1
 # kind: DBInstance
