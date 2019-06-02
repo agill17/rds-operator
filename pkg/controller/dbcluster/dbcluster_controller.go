@@ -107,7 +107,7 @@ func (r *ReconcileDBCluster) Reconcile(request reconcile.Request) (reconcile.Res
 	clusterObj := rdsLib.NewCluster(r.rdsClient, cr.Spec.CreateClusterSpec,
 		cr.Spec.DeleteSpec, cr.Spec.CreateClusterFromSnapshot)
 
-	if err := r.CRUD(cr, clusterObj, actionType); err != nil {
+	if err := r.crud(cr, clusterObj, actionType); err != nil {
 		return reconcile.Result{}, err
 	}
 

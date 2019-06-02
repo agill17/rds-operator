@@ -9,7 +9,7 @@ import (
 )
 
 // responsible for creating, deleting and restoring db cluster based on actionType
-func (r *ReconcileDBCluster) CRUD(cr *kubev1alpha1.DBCluster,
+func (r *ReconcileDBCluster) crud(cr *kubev1alpha1.DBCluster,
 	clusterObj rdsLib.RDS, actionType rdsLib.RDSAction) error {
 	switch actionType {
 
