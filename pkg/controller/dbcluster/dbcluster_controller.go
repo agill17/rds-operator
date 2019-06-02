@@ -79,9 +79,9 @@ func (r *ReconcileDBCluster) Reconcile(request reconcile.Request) (reconcile.Res
 	}
 
 	// get action type ( ALWAYS )
-	// actionType changes between create/restor and delete
+	// actionType changes between create/restore and delete
 	// actionType will be delete when its time to delete rds cluster
-	actionType := getInstallType(cr)
+	actionType := getActionType(cr)
 
 	if err := r.setUpDefaultsIfNeeded(cr, actionType); err != nil {
 		return reconcile.Result{}, err
@@ -112,8 +112,10 @@ func (r *ReconcileDBCluster) Reconcile(request reconcile.Request) (reconcile.Res
 	}
 
 	// create/update secret
-	if err := r.createSecret(cr, actionType); err != nil && !errors.IsForbidden(err) {
-		return reconcile.Result{}, err
+	if actionType != rdsLib.DELETE {
+		if err := r.createSecret(cr, actionType); err != nil && !errors.IsForbidden(err) {
+			return reconcile.Result{}, err
+		}
 	}
 
 	return reconcile.Result{Requeue: true}, nil

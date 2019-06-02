@@ -105,7 +105,7 @@ func validateRequiredInput(cr *kubev1alpha1.DBCluster) error {
 	return nil
 }
 
-func getInstallType(cr *kubev1alpha1.DBCluster) rdsLib.RDSAction {
+func getActionType(cr *kubev1alpha1.DBCluster) rdsLib.RDSAction {
 	if cr.GetDeletionTimestamp() != nil && len(cr.GetFinalizers()) > 0 {
 		return rdsLib.DELETE
 	} else if cr.Spec.CreateClusterFromSnapshot != nil {
