@@ -100,15 +100,16 @@ func (r *ReconcileDBCluster) Reconcile(request reconcile.Request) (reconcile.Res
 		}
 	}
 
-	// returns RDS interface type.
-	// cluster obj implements and satifies RDS interface
+	// returns cluster struct which is also part of rds interface
+	// so we can call all funcs that are part of the interface as long as cluster satifies the interface
+	// cluster obj implements and satifies RDS interface by implementing all methods of that interface
 	clusterObj := rdsLib.NewCluster(r.rdsClient, cr.Spec.CreateClusterSpec,
 		cr.Spec.DeleteSpec, cr.Spec.CreateClusterFromSnapshot)
 
 	// delete
 	if deletionTimeExists && !zeroFinalizers {
 		logrus.Warnf("Namespace: %v | CLuster CR: %v | Delete Event detected", cr.Namespace, cr.Name)
-		err := rdsLib.InstallRestoreDelete(clusterObj, rdsLib.DELETE)
+		err := clusterObj.Delete()
 		if err != nil {
 			return reconcile.Result{}, err
 		}

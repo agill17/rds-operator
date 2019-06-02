@@ -10,7 +10,7 @@ import (
 
 func (r *ReconcileDBCluster) restoreAndUpdateState(cr *kubev1alpha1.DBCluster, cluster rdsLib.RDS) error {
 
-	err := rdsLib.InstallRestoreDelete(cluster, rdsLib.RESTORE)
+	err := cluster.Delete()
 	if err != nil {
 		logrus.Errorf("Error while re-healing db cluster instance from snapshot: %v", err)
 		return err

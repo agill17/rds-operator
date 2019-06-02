@@ -11,7 +11,7 @@ import (
 func (r *ReconcileDBCluster) createItAndUpdateState(cr *kubev1alpha1.DBCluster, cluster rdsLib.RDS) error {
 	var err error
 
-	err = rdsLib.InstallRestoreDelete(cluster, rdsLib.CREATE)
+	err = cluster.Create()
 	if err != nil {
 		return err
 	}
