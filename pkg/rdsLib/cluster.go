@@ -6,6 +6,7 @@ import (
 	"github.com/agill17/rds-operator/pkg/lib"
 	"github.com/aws/aws-sdk-go/service/rds"
 	"github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 type cluster struct {
@@ -13,6 +14,7 @@ type cluster struct {
 	createInput          *rds.CreateDBClusterInput
 	deleteInput          *rds.DeleteDBClusterInput
 	restoreFromSnapInput *rds.RestoreDBClusterFromSnapshotInput
+	object               runtime.Object
 }
 
 func NewCluster(rdsClient *rds.RDS, createInput *rds.CreateDBClusterInput,

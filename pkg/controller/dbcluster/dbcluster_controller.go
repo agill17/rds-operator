@@ -6,7 +6,6 @@ import (
 	"github.com/agill17/rds-operator/pkg/rdsLib"
 
 	"github.com/aws/aws-sdk-go/service/rds"
-	"github.com/sirupsen/logrus"
 
 	"github.com/agill17/rds-operator/pkg/lib"
 
@@ -79,10 +78,12 @@ func (r *ReconcileDBCluster) Reconcile(request reconcile.Request) (reconcile.Res
 		return reconcile.Result{}, err
 	}
 
-	// get install type ( ALWAYS )
-	installType := getInstallType(cr)
+	// get action type ( ALWAYS )
+	// actionType changes between create/restor and delete
+	// actionType will be delete when its time to delete rds cluster
+	actionType := getInstallType(cr)
 
-	if err := r.setUpDefaultsIfNeeded(cr, installType); err != nil {
+	if err := r.setUpDefaultsIfNeeded(cr, actionType); err != nil {
 		return reconcile.Result{}, err
 	}
 
@@ -106,45 +107,12 @@ func (r *ReconcileDBCluster) Reconcile(request reconcile.Request) (reconcile.Res
 	clusterObj := rdsLib.NewCluster(r.rdsClient, cr.Spec.CreateClusterSpec,
 		cr.Spec.DeleteSpec, cr.Spec.CreateClusterFromSnapshot)
 
-	// delete
-	if deletionTimeExists && !zeroFinalizers {
-		logrus.Warnf("Namespace: %v | CLuster CR: %v | Delete Event detected", cr.Namespace, cr.Name)
-		err := clusterObj.Delete()
-		if err != nil {
-			return reconcile.Result{}, err
-		}
-		cr.SetFinalizers([]string{})
-		if err := lib.UpdateCr(r.client, cr); err != nil {
-			return reconcile.Result{}, err
-		}
-		return reconcile.Result{Requeue: false}, nil
+	if err := r.CRUD(cr, clusterObj, actionType); err != nil {
+		return reconcile.Result{}, err
 	}
 
-	if !cr.Status.Created {
-
-		if installType == rdsLib.CREATE {
-			// create cluster
-			err := r.createItAndUpdateState(cr, clusterObj)
-			if err != nil {
-				switch err.(type) {
-				case *lib.ErrorResourceCreatingInProgress:
-					logrus.Warnf("Namespace: %v | CR: %v | Msg: Cluster still in creating phase. Reconciling to check again.", cr.Namespace, cr.Name)
-					return reconcile.Result{Requeue: true}, nil
-				default:
-					return reconcile.Result{}, err
-				}
-			}
-		} else if installType == rdsLib.RESTORE {
-			// create from snapshot
-			logrus.Infof("Recreate cluster requested for namespace: %v", cr.Namespace)
-			if err := r.restoreAndUpdateState(cr, clusterObj); err != nil {
-				return reconcile.Result{}, err
-			}
-		}
-	}
-
-	// create secret
-	if err := r.createSecret(cr, installType); err != nil && !errors.IsForbidden(err) {
+	// create/update secret
+	if err := r.createSecret(cr, actionType); err != nil && !errors.IsForbidden(err) {
 		return reconcile.Result{}, err
 	}
 
