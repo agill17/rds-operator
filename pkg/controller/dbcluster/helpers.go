@@ -7,6 +7,8 @@ import (
 	"os/exec"
 	"strings"
 
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
 	"github.com/agill17/rds-operator/pkg/rdsLib"
 
 	kubev1alpha1 "github.com/agill17/rds-operator/pkg/apis/agill/v1alpha1"
@@ -116,10 +118,11 @@ func getInstallType(cr *kubev1alpha1.DBCluster) rdsLib.RDSAction {
 }
 
 func (r *ReconcileDBCluster) createSecret(cr *kubev1alpha1.DBCluster, installType rdsLib.RDSAction) error {
-	secretObj := r.getSecretObj(cr, installType)
-	if !lib.SecretExists(cr.Namespace, secretObj.Name, r.client) {
-		logrus.Infof("Namespace: %v | Secret Name: %v | Msg: Creating Secret", cr.Namespace, secretObj.Name)
-		return r.client.Create(context.TODO(), secretObj)
+	if _, err := controllerutil.CreateOrUpdate(
+		context.TODO(), r.client,
+		r.getSecretObj(cr, installType), nil,
+	); err != nil {
+		return err
 	}
 
 	return nil
