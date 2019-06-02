@@ -92,5 +92,12 @@ func (dh *cluster) clusterExists() (bool, RDS_RESOURCE_STATE) {
 		},
 	)
 
-	return exists, parseRemoteStatus(*out.DBClusters[0].Status)
+	var state RDS_RESOURCE_STATE
+	if exists {
+		state = parseRemoteStatus(*out.DBClusters[0].Status)
+	} else if !exists {
+		state = RDS_UNKNOWN
+	}
+
+	return exists, state
 }

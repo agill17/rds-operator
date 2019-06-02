@@ -7,8 +7,6 @@ import (
 	"os/exec"
 	"strings"
 
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-
 	"github.com/agill17/rds-operator/pkg/rdsLib"
 
 	kubev1alpha1 "github.com/agill17/rds-operator/pkg/apis/agill/v1alpha1"
@@ -117,19 +115,18 @@ func getActionType(cr *kubev1alpha1.DBCluster) rdsLib.RDSAction {
 	return rdsLib.UNKNOWN
 }
 
-func (r *ReconcileDBCluster) createSecret(cr *kubev1alpha1.DBCluster, installType rdsLib.RDSAction) error {
-	if _, err := controllerutil.CreateOrUpdate(
-		context.TODO(), r.client,
-		r.getSecretObj(cr, installType), nil,
-	); err != nil {
-		return err
+func (r *ReconcileDBCluster) createSecret(cr *kubev1alpha1.DBCluster, actionType rdsLib.RDSAction) error {
+	secretObj := r.getSecretObj(cr, actionType)
+	if !lib.SecretExists(cr.Namespace, secretObj.Name, r.client) {
+		logrus.Infof("Namespace: %v | Secret Name: %v | Msg: Creating Secret", cr.Namespace, secretObj.Name)
+		return r.client.Create(context.TODO(), secretObj)
 	}
 
 	return nil
 }
 
-func getDBClusterID(cr *kubev1alpha1.DBCluster, installType rdsLib.RDSAction) string {
-	switch installType {
+func getDBClusterID(cr *kubev1alpha1.DBCluster, actionType rdsLib.RDSAction) string {
+	switch actionType {
 	case rdsLib.CREATE:
 		return *cr.Spec.CreateClusterSpec.DBClusterIdentifier
 	case rdsLib.RESTORE:
