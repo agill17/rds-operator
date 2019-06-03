@@ -22,13 +22,10 @@ type DBInstanceSpec struct {
 
 // DBInstanceStatus defines the observed state of DBInstance
 type DBInstanceStatus struct {
-	InstanceID               string                         `json:"instanceID"`
-	ClusterID                string                         `json:"clusterID"`
 	DBClusterMarkedAvail     bool                           `json:"dbClusterMarkedAvail"`
 	RDSInstanceStatus        *rds.DescribeDBInstancesOutput `json:"rdsInstanceStatus"`
 	Created                  bool                           `json:"created"`
 	RestoredFromSnapshotName string                         `json:"restoredFromSnapshotName"`
-	UpdateKubeFiles          bool                           `json:"updateKubeFiles"`
 	InitJobTimedOut          bool                           `json:"initJobTimedOut"`
 	InitJobSuccessfull       bool                           `json:"initJobSuccessfull"`
 	Username                 string                         `json:"username"`
