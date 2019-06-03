@@ -11,7 +11,7 @@
 # Features
 - Create ( **All RDS Databases**, Subnet groups ) :white_check_mark:
 - Delete ( **All RDS Databases**, Subnet groups ) :white_check_mark:
-- Create **DBCluster** from an RDS Snapshot ( **All RDS Databases** ) :white_check_mark: ( DBInstance not yet supported )
+- Create **DBCluster** and **DBInstance** from an RDS Snapshot ( **All RDS Databases** ) :white_check_mark: 
 - Reconcile AWS resources periodically :x: ( Recreate DB incase they get deleted )
 - Update ( COMING SOON ) :x:
 - CreateReadReplica ( COMING SOON ) :x:
