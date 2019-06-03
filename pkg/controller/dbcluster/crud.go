@@ -5,7 +5,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	kubev1alpha1 "github.com/agill17/rds-operator/pkg/apis/agill/v1alpha1"
-	"github.com/agill17/rds-operator/pkg/lib"
 )
 
 // responsible for creating, deleting and restoring db cluster based on actionType
@@ -21,11 +20,6 @@ func (r *ReconcileDBCluster) crud(cr *kubev1alpha1.DBCluster,
 
 			err := r.createItAndUpdateState(cr, clusterObj)
 			if err != nil {
-				switch err.(type) {
-				case *lib.ErrorResourceCreatingInProgress:
-					// print this out so its helpful when looking at logs
-					logrus.Errorf("Namespace: %v | CR: %v | Msg: Cluster still in creating phase. Reconciling to check again.", cr.Namespace, cr.Name)
-				}
 				return err
 			}
 

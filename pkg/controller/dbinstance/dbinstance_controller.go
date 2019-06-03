@@ -3,15 +3,11 @@ package dbinstance
 import (
 	"context"
 
-	"github.com/sirupsen/logrus"
-
-	"github.com/agill17/rds-operator/pkg/lib"
-
-	"github.com/aws/aws-sdk-go/service/rds"
-
-	goerror "errors"
-
 	kubev1alpha1 "github.com/agill17/rds-operator/pkg/apis/agill/v1alpha1"
+	"github.com/agill17/rds-operator/pkg/lib"
+	"github.com/agill17/rds-operator/pkg/rdsLib"
+	"github.com/aws/aws-sdk-go/service/rds"
+	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -74,19 +70,22 @@ func (r *ReconcileDBInstance) Reconcile(request reconcile.Request) (reconcile.Re
 		return reconcile.Result{}, err
 	}
 
-	// if spec is nil, return err until not nil
-	// this is to avoid null pointer dereference ( as i am directly using aws objects )
-	if cr.Spec.CreateInstanceSpec == nil {
-		logrus.Errorf("createInstanceSpec cannot be nil. Please provide a spec and try again in namespace: %v", cr.Namespace)
-		return reconcile.Result{}, goerror.New("EmptyDBInstanceSpecError")
-	}
+	// get actionType ( AWLAYS )
+	// actionType could switch between create/restore AND delete
+	actionType := getActionType(cr)
 
-	r.rdsClient = lib.GetRDSClient()
-
-	// set up cr fields when not associated to cluster
-	if err := r.setCRDefaultsIfNeeded(cr); err != nil {
+	// validate create, delete and restore specs are not nil
+	if err := validateSpecBasedOnType(cr, actionType); err != nil {
 		return reconcile.Result{}, err
 	}
+
+	// set up cr fields
+	if err := r.setCRDefaultsIfNeeded(cr, actionType); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	// set up rds client
+	r.rdsClient = lib.GetRDSClient()
 
 	// set up finalizers
 	currentFinalizers := cr.GetFinalizers()
@@ -102,23 +101,24 @@ func (r *ReconcileDBInstance) Reconcile(request reconcile.Request) (reconcile.Re
 		}
 	}
 
-	// delete
-	if deletionTimeExists && anyFinalizersExists {
-		return r.handleDeleteEvents(cr, *cr.Spec.CreateInstanceSpec.DBInstanceIdentifier)
-	}
+	// get new instanceObj
+	insObj := rdsLib.NewInstance(
+		r.rdsClient,
+		cr.Spec.CreateInstanceSpec,
+		cr.Spec.DeleteInstanceSpec,
+		cr.Spec.RestoreInstanceFromSnap,
+	)
 
-	// create
-	if !cr.Status.DeployedInitially {
-		if _, err := r.createNewDBInstance(cr); err != nil {
-			switch err.(type) {
-			case *lib.ErrorResourceCreatingInProgress:
-				logrus.Warnf("DBInstance not up yet, Reconciling to check again")
-				return reconcile.Result{Requeue: true}, nil
-			default:
-				logrus.Errorf("Namespace: %v | DB Instance ID: %v | Msg: Something went wrong when creating db instance: %v", cr.Namespace, *cr.Spec.CreateInstanceSpec.DBInstanceIdentifier, err)
-				return reconcile.Result{}, err
-			}
+	err = r.crud(cr, insObj, actionType)
+	if err != nil {
+		switch err.(type) {
+		case *lib.ErrorResourceCreatingInProgress:
+			logrus.Warnf("DBInstance not up yet, Reconciling to check again")
+			return reconcile.Result{Requeue: true}, nil
+		default:
+			logrus.Errorf("Namespace: %v | DB Instance ID: %v | Msg: Something went wrong when creating db instance: %v", cr.Namespace, *cr.Spec.CreateInstanceSpec.DBInstanceIdentifier, err)
 		}
+		return reconcile.Result{}, err
 	}
 
 	// create a k8s service with rds endpoint as ExternalName
@@ -131,13 +131,14 @@ func (r *ReconcileDBInstance) Reconcile(request reconcile.Request) (reconcile.Re
 		return reconcile.Result{}, err
 	}
 
-	// restore
-	instanceExists, _ := lib.DBInstanceExists(&lib.RDSGenerics{RDSClient: r.rdsClient, InstanceID: *cr.Spec.CreateInstanceSpec.DBInstanceIdentifier})
-	if cr.Status.DeployedInitially && !instanceExists {
-		if err := r.restore(cr); err != nil {
-			return reconcile.Result{}, err
-		}
-	}
-
 	return reconcile.Result{}, nil
 }
+
+/*
+
+	Get DBID and ClusterID IF NEEDED from 2 cases
+	CreateNew
+		isWithCluster?
+	RestoreFromSnapshpt
+
+*/

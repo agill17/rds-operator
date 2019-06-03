@@ -2,6 +2,9 @@ package rdsLib
 
 import (
 	"errors"
+	"fmt"
+	"strings"
+	"time"
 
 	"github.com/agill17/rds-operator/pkg/lib"
 	"github.com/aws/aws-sdk-go/service/rds"
@@ -100,4 +103,12 @@ func (dh *cluster) clusterExists() (bool, RDS_RESOURCE_STATE) {
 	}
 
 	return exists, state
+}
+
+func (dh *cluster) setTimestampInSnapshotName() {
+	if dh.deleteInput.FinalDBSnapshotIdentifier != nil && !*dh.deleteInput.SkipFinalSnapshot {
+		currentTime := time.Now().Format("2006-01-02:03-02-44")
+		snashotName := fmt.Sprintf("%v-%v", dh.deleteInput.DBClusterIdentifier, strings.Replace(currentTime, ":", "-", -1))
+		dh.deleteInput.FinalDBSnapshotIdentifier = &snashotName
+	}
 }

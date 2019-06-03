@@ -2,14 +2,14 @@ package dbinstance
 
 import (
 	"github.com/agill17/rds-operator/pkg/lib"
+	"github.com/agill17/rds-operator/pkg/rdsLib"
 	"github.com/sirupsen/logrus"
 
 	kubev1alpha1 "github.com/agill17/rds-operator/pkg/apis/agill/v1alpha1"
 	"github.com/aws/aws-sdk-go/service/rds"
-	"github.com/davecgh/go-spew/spew"
 )
 
-func (r *ReconcileDBInstance) createNewDBInstance(cr *kubev1alpha1.DBInstance) (*rds.CreateDBInstanceOutput, error) {
+func (r *ReconcileDBInstance) createNewDBInstance(cr *kubev1alpha1.DBInstance, insObj rdsLib.RDS) (*rds.CreateDBInstanceOutput, error) {
 
 	var createOut *rds.CreateDBInstanceOutput
 	var err error
@@ -19,27 +19,22 @@ func (r *ReconcileDBInstance) createNewDBInstance(cr *kubev1alpha1.DBInstance) (
 		return nil, err
 	}
 
-	// only create if it does not exist or not already being created
-	if exists, _ := lib.DBInstanceExists(&lib.RDSGenerics{RDSClient: r.rdsClient, InstanceID: dbInsID}); !exists {
-		logrus.Infof("Namespace: %v | DB Identifier: %v | Msg: Initial -- Creating DB", cr.Namespace, dbInsID)
-		createOut, err = r.rdsClient.CreateDBInstance(cr.Spec.CreateInstanceSpec)
-		if err != nil {
-			logrus.Errorf("Error while creating DB: %v", err)
-			return createOut, err
-		}
-		spew.Dump(createOut)
+	// checks if it exists first
+	err = insObj.Create()
+	if err != nil {
+		return nil, err
 	}
 
 	if err := r.handlePhases(cr); err != nil {
 		return nil, err
 	}
 
-	cr.Status.DeployedInitially = true
+	cr.Status.Created = true
 	_, rdsInstanceStatus := lib.DBInstanceExists(&lib.RDSGenerics{RDSClient: r.rdsClient, InstanceID: dbInsID})
 	cr.Status.RDSInstanceStatus = rdsInstanceStatus
 
 	// update status
-	if err = r.updateResourceStatus(cr); err != nil {
+	if err = lib.UpdateCrStatus(r.client, cr); err != nil {
 		logrus.Errorf("Failed to update cr status for DBInstance: %v", err)
 		return nil, err
 	}
@@ -48,6 +43,8 @@ func (r *ReconcileDBInstance) createNewDBInstance(cr *kubev1alpha1.DBInstance) (
 	return createOut, err
 }
 
+// assuming instance is part of cluster, then use this func to wait until cluster is ready
+// only valid when on fresh installsm restore from snapshot is done on clusters
 func (r *ReconcileDBInstance) waitForClusterIfNeeded(cr *kubev1alpha1.DBInstance) error {
 	var err error
 	dbInsID := *cr.Spec.CreateInstanceSpec.DBInstanceIdentifier
@@ -56,26 +53,12 @@ func (r *ReconcileDBInstance) waitForClusterIfNeeded(cr *kubev1alpha1.DBInstance
 	if cr.Spec.CreateInstanceSpec.DBClusterIdentifier != nil && !cr.Status.DBClusterMarkedAvail {
 		dbClsID := *cr.Spec.CreateInstanceSpec.DBClusterIdentifier
 		logrus.Infof("Namespace: %v | DB Identifier: %v | Msg: Part of cluster: %v -- checking if its available first", cr.Namespace, dbInsID, dbClsID)
-		err = r.dbClusterReady(cr)
+		err = r.dbClusterReady(*cr.Spec.CreateInstanceSpec.DBClusterIdentifier)
 		if err != nil {
 			return err
 		}
 		cr.Status.DBClusterMarkedAvail = true
-		return r.updateResourceStatus(cr)
+		return lib.UpdateCrStatus(r.client, cr)
 	}
 	return err
-}
-
-func (r *ReconcileDBInstance) createReadReplica(cr *kubev1alpha1.DBInstance) error {
-
-	if cr.Status.CurrentPhase == "available" && cr.Spec.CreateReadReplicaSpec != nil {
-
-		if _, err := r.rdsClient.CreateDBInstanceReadReplica(cr.Spec.CreateReadReplicaSpec); err != nil {
-			logrus.Errorf("Failed to create read replica for namespace: %v ~~> %v", cr.Namespace, err)
-			return err
-		}
-	}
-
-	return nil
-
 }

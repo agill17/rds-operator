@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/agill17/rds-operator/pkg/rdsLib"
+	"github.com/sirupsen/logrus"
 
 	"github.com/aws/aws-sdk-go/service/rds"
 
@@ -108,6 +109,11 @@ func (r *ReconcileDBCluster) Reconcile(request reconcile.Request) (reconcile.Res
 		cr.Spec.DeleteSpec, cr.Spec.CreateClusterFromSnapshot)
 
 	if err := r.crud(cr, clusterObj, actionType); err != nil {
+		switch err.(type) {
+		case *lib.ErrorResourceCreatingInProgress:
+			logrus.Errorf("Namespace: %v | CR: %v | Msg: Cluster still in creating phase. Reconciling to check again.", cr.Namespace, cr.Name)
+			return reconcile.Result{Requeue: true}, nil
+		}
 		return reconcile.Result{}, err
 	}
 

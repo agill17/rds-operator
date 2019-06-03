@@ -47,8 +47,8 @@ func (r *ReconcileDBCluster) updateLocalStatusWithAwsStatus(cr *kubev1alpha1.DBC
 	currentLocalPhase := cr.Status.CurrentPhase
 
 	if exists {
-		logrus.Infof("DBCluster: Current phase in AWS: %v", *out.DBClusters[0].Status)
-		logrus.Infof("DBCluster: Current phase in CR: %v", currentLocalPhase)
+		logrus.Infof("DBCluster CR: %v | Namespace: %v | Current phase in AWS: %v", cr.Name, cr.Namespace, *out.DBClusters[0].Status)
+		logrus.Infof("DBCluster CR: %v | Namespace: %v | Current phase in CR: %v", cr.Name, cr.Namespace, currentLocalPhase)
 
 		if currentLocalPhase != strings.ToLower(*out.DBClusters[0].Status) {
 			logrus.Warnf("Updating current phase in CR for namespace: %v", cr.Namespace)
@@ -70,7 +70,7 @@ func (r *ReconcileDBCluster) handlePhases(cr *kubev1alpha1.DBCluster, clusterID 
 	switch currentPhase {
 	case "available":
 		return nil
-	case "creating", "backing-up":
+	case "creating", "backing-up", "restoring":
 		return &lib.ErrorResourceCreatingInProgress{Message: "ClusterCreatingInProgress"}
 	case "deleting":
 		return &lib.ErrorResourceDeletingInProgress{Message: "ClusterDeletingInProgress"}

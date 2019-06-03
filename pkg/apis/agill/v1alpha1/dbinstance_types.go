@@ -11,20 +11,22 @@ import (
 
 // DBInstanceSpec defines the desired state of DBInstance
 type DBInstanceSpec struct {
-	Region                string                                `json:"region"`
-	InstanceSecretName    string                                `json:"instanceSecretName,omitempty"`
-	ServiceName           string                                `json:"serviceName,omitempty"`
-	InitDB                InitDB                                `json:"initDB,omitempty"`
-	CreateInstanceSpec    *rds.CreateDBInstanceInput            `json:"createInstanceSpec,required"`
-	CreateReadReplicaSpec *rds.CreateDBInstanceReadReplicaInput `json:"createReadReplicaSpec"`
-	DeleteInstanceSpec    DeleteInstanceSpec                    `json:"deleteInstanceSpec,required"`
+	Region                  string                                    `json:"region"`
+	InstanceSecretName      string                                    `json:"instanceSecretName,omitempty"`
+	ServiceName             string                                    `json:"serviceName,omitempty"`
+	InitDB                  InitDB                                    `json:"initDB,omitempty"`
+	CreateInstanceSpec      *rds.CreateDBInstanceInput                `json:"createInstanceSpec"`
+	RestoreInstanceFromSnap *rds.RestoreDBInstanceFromDBSnapshotInput `json:"createInstanceFromSnapshot"`
+	DeleteInstanceSpec      *rds.DeleteDBInstanceInput                `json:"deleteInstanceSpec,required"`
 }
 
 // DBInstanceStatus defines the observed state of DBInstance
 type DBInstanceStatus struct {
+	InstanceID               string                         `json:"instanceID"`
+	ClusterID                string                         `json:"clusterID"`
 	DBClusterMarkedAvail     bool                           `json:"dbClusterMarkedAvail"`
 	RDSInstanceStatus        *rds.DescribeDBInstancesOutput `json:"rdsInstanceStatus"`
-	DeployedInitially        bool                           `json:"deployedInitially"`
+	Created                  bool                           `json:"created"`
 	RestoredFromSnapshotName string                         `json:"restoredFromSnapshotName"`
 	UpdateKubeFiles          bool                           `json:"updateKubeFiles"`
 	InitJobTimedOut          bool                           `json:"initJobTimedOut"`
@@ -43,12 +45,6 @@ type DBInstance struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 	Spec              DBInstanceSpec   `json:"spec,required"`
 	Status            DBInstanceStatus `json:"status,omitempty"`
-}
-
-type DeleteInstanceSpec struct {
-	DeleteAutomatedBackups    bool   `json:"DeleteAutomatedBackups"`
-	SkipFinalSnapshot         bool   `json:"SkipFinalSnapshot"`
-	FinalDBSnapshotIdentifier string `json:"FinalDBSnapshotIdentifier,omitempty"`
 }
 
 type InitDB struct {

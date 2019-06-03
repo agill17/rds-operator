@@ -15,14 +15,14 @@ type instance struct {
 
 func NewInstance(rdsClient *rds.RDS,
 	createIn *rds.CreateDBInstanceInput, deleteIn *rds.DeleteDBInstanceInput,
-	restoreIn *rds.RestoreDBInstanceFromDBSnapshotInput) (RDS, error) {
+	restoreIn *rds.RestoreDBInstanceFromDBSnapshotInput) RDS {
 
 	return &instance{
 		rdsClient:         rdsClient,
 		createIn:          createIn,
 		deleteIn:          deleteIn,
 		restoreFromSnapIn: restoreIn,
-	}, nil
+	}
 }
 
 // Create Instance
@@ -75,6 +75,10 @@ func (i *instance) instanceExists() (bool, RDS_RESOURCE_STATE) {
 	}
 
 	exists, out := lib.DBInstanceExists(&lib.RDSGenerics{RDSClient: i.rdsClient, InstanceID: insID})
+	var insState string
+	if exists {
+		insState = *out.DBInstances[0].DBInstanceStatus
+	}
 
-	return exists, parseRemoteStatus(*out.DBInstances[0].DBInstanceStatus)
+	return exists, parseRemoteStatus(insState)
 }

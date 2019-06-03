@@ -6,19 +6,16 @@ type RDSAction string
 type RDS_RESOURCE_STATE string
 
 const (
-	CREATE  RDSAction = "new"
-	RESTORE RDSAction = "fromSnapshot"
-	DELETE  RDSAction = "delete"
-	UNKNOWN RDSAction = "unknown"
-)
-
-const (
 	RDS_AVAILABLE  RDS_RESOURCE_STATE = "available"
 	RDS_CREATING   RDS_RESOURCE_STATE = "creating"
 	RDS_DELETING   RDS_RESOURCE_STATE = "deleting"
 	RDS_RESTORING  RDS_RESOURCE_STATE = "restoring"
 	RDS_BACKING_UP RDS_RESOURCE_STATE = "backing-up"
 	RDS_UNKNOWN    RDS_RESOURCE_STATE = "unknown"
+	CREATE         RDSAction          = "new"
+	RESTORE        RDSAction          = "restoreFromSnapshot"
+	DELETE         RDSAction          = "delete"
+	UNKNOWN        RDSAction          = "unknown"
 )
 
 type RDS interface {

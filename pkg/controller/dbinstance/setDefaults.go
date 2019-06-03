@@ -3,6 +3,7 @@ package dbinstance
 import (
 	kubev1alpha1 "github.com/agill17/rds-operator/pkg/apis/agill/v1alpha1"
 	"github.com/agill17/rds-operator/pkg/lib"
+	"github.com/agill17/rds-operator/pkg/rdsLib"
 	"github.com/sirupsen/logrus"
 )
 
@@ -43,19 +44,31 @@ func (r *ReconcileDBInstance) setPassword(cr *kubev1alpha1.DBInstance) error {
 	return nil
 }
 
-func (r *ReconcileDBInstance) setJobBackOffLimit(cr *kubev1alpha1.DBInstance) error {
-	cr.Spec.InitDB.BackOffLimit = 6
+func (r *ReconcileDBInstance) setDeleteInsID(cr *kubev1alpha1.DBInstance, actionType rdsLib.RDSAction) error {
+
+	switch actionType {
+	case rdsLib.CREATE:
+		cr.Spec.DeleteInstanceSpec.DBInstanceIdentifier = cr.Spec.CreateInstanceSpec.DBInstanceIdentifier
+	case rdsLib.RESTORE:
+		cr.Spec.DeleteInstanceSpec.DBInstanceIdentifier = cr.Spec.RestoreInstanceFromSnap.DBInstanceIdentifier
+	}
+
+	if err := lib.UpdateCrStatus(r.client, cr); err != nil {
+		return err
+	}
+
 	return lib.UpdateCr(r.client, cr)
 }
 
-func (r *ReconcileDBInstance) setInitDBJobDefaults(cr *kubev1alpha1.DBInstance) error {
-	return r.setJobBackOffLimit(cr)
-}
-
 // only used when instance is not associated to cluster
-func (r *ReconcileDBInstance) setCRDefaultsIfNeeded(cr *kubev1alpha1.DBInstance) error {
+func (r *ReconcileDBInstance) setCRDefaultsIfNeeded(cr *kubev1alpha1.DBInstance, actionType rdsLib.RDSAction) error {
+	if err := r.setDeleteInsID(cr, actionType); err != nil {
+		return err
+	}
 
-	if isStandAlone(cr) {
+	// when NOT associated with cluster, username and password
+	// must be part of CreateDBInstanceInput
+	if !isPartOfCluster(cr) {
 
 		// update username if needed
 		if err := r.setUsername(cr); err != nil {
@@ -71,12 +84,6 @@ func (r *ReconcileDBInstance) setCRDefaultsIfNeeded(cr *kubev1alpha1.DBInstance)
 
 	if err := r.setRegion(cr); err != nil {
 		return err
-	}
-
-	if cr.Spec.InitDB.Image != "" {
-		if err := r.setInitDBJobDefaults(cr); err != nil {
-			return err
-		}
 	}
 
 	return nil
