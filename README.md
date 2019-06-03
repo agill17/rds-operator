@@ -8,11 +8,21 @@
 #### Option 2: Helm chart
 
 
+#### Note: If you want to deploy mysql and or postgress using aurora, you MUST use both DBCluster and DBInstance
+
 # Features
-- Create ( **All RDS Databases**, Subnet groups ) :white_check_mark:
-- Delete ( **All RDS Databases**, Subnet groups ) :white_check_mark:
-- Create **DBCluster** and **DBInstance** from an RDS Snapshot ( **All RDS Databases** ) :white_check_mark: 
+- _**Create**_ ( **All RDS Databases**, Subnet groups )
+  - DBCluster: `spec.createClusterSpec` :white_check_mark:
+  - DBInstance: `spec.createInstanceSpec` :white_check_mark: 
+- _**Delete**_ ( **All RDS Databases**, Subnet groups ) :white_check_mark:
+  - DBCluster: `spec.deleteClusterSpec` :white_check_mark:
+  - DBInstance: `spec.deleteInstanceSpec` :white_check_mark: 
+- _**Restore**_ from rds snapshot ( **All RDS Databases** )
+  - DBCluster: `spec.createClusterFromSnapshot` :white_check_mark:
+  - DBInstance: `spec.createInstanceFromSnapshot` :white_check_mark:
+
+## TODO 
 - Reconcile AWS resources periodically :x: ( Recreate DB incase they get deleted )
 - Update ( COMING SOON ) :x:
-- CreateReadReplica ( COMING SOON ) :x:
+- CreateReadReplica when deployed from scratch and or from snapshot ( COMING SOON ) :x:
 
