@@ -133,12 +133,3 @@ func (r *ReconcileDBInstance) Reconcile(request reconcile.Request) (reconcile.Re
 
 	return reconcile.Result{}, nil
 }
-
-/*
-
-	Get DBID and ClusterID IF NEEDED from 2 cases
-	CreateNew
-		isWithCluster?
-	RestoreFromSnapshpt
-
-*/

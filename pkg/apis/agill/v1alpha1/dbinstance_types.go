@@ -15,8 +15,8 @@ type DBInstanceSpec struct {
 	InstanceSecretName      string                                    `json:"instanceSecretName,omitempty"`
 	ServiceName             string                                    `json:"serviceName,omitempty"`
 	InitDB                  InitDB                                    `json:"initDB,omitempty"`
-	CreateInstanceSpec      *rds.CreateDBInstanceInput                `json:"createInstanceSpec"`
-	RestoreInstanceFromSnap *rds.RestoreDBInstanceFromDBSnapshotInput `json:"createInstanceFromSnapshot"`
+	CreateInstanceSpec      *rds.CreateDBInstanceInput                `json:"createInstanceSpec,omitempty"`
+	RestoreInstanceFromSnap *rds.RestoreDBInstanceFromDBSnapshotInput `json:"createInstanceFromSnapshot,omitempty"`
 	DeleteInstanceSpec      *rds.DeleteDBInstanceInput                `json:"deleteInstanceSpec,required"`
 }
 
