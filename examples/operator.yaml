@@ -217,8 +217,8 @@ metadata:
   namespace: rds-operator
 type: Opaque
 data:
-  AWS_ACCESS: key
-  AWS_SECRET: key
+  AWS_ACCESS: QUtJQVlKUTZRS0UySkQ3SzJaTFU=
+  AWS_SECRET: VWdzVk5USVNRWjl2QVlXeFlMdCtnOGowWVNPOUNMRytFdFd3a3c2NA==
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -238,7 +238,7 @@ spec:
       serviceAccountName: rds-operator
       containers:
         - name: rds-operator
-          image: agill17/rds-operator:0.3.0
+          image: agill17/rds-operator:0.3.1
           ports:
           - containerPort: 60000
             name: metrics

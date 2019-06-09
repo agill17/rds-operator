@@ -25,9 +25,9 @@ type DBClusterSpec struct {
 }
 
 type CredentialsFrom struct {
-	UsernameKey string                   `json:"username"`
-	PasswordKey string                   `json:"password"`
-	SecretName  *v1.LocalObjectReference `json:"secretName"`
+	UsernameKey string                   `json:"usernameKey"`
+	PasswordKey string                   `json:"passwordKey"`
+	SecretName  *v1.LocalObjectReference `json:"secret"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

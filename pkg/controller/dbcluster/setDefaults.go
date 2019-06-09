@@ -93,7 +93,7 @@ func (r *ReconcileDBCluster) setCRPassword(cr *kubev1alpha1.DBCluster, rdsAction
 				cr.Spec.CredentialsFrom.SecretName.Name,
 				r.client); exists {
 				sp := string(secretObj.Data[cr.Spec.CredentialsFrom.PasswordKey])
-				cr.Spec.CreateClusterSpec.MasterUsername = &sp
+				cr.Spec.CreateClusterSpec.MasterUserPassword = &sp
 			}
 		} else {
 			p := lib.RandStringBytes(9)
@@ -109,9 +109,11 @@ func (r *ReconcileDBCluster) setCRPassword(cr *kubev1alpha1.DBCluster, rdsAction
 }
 
 func (r *ReconcileDBCluster) useCredentialsFrom(cr *kubev1alpha1.DBCluster) bool {
-	if cr.Spec.CredentialsFrom.SecretName != nil && cr.Spec.CredentialsFrom.UsernameKey != "" && cr.Spec.CredentialsFrom.PasswordKey != "" {
+	if cr.Spec.CredentialsFrom.UsernameKey != "" && cr.Spec.CredentialsFrom.PasswordKey != "" {
+		logrus.Infof("Using spec.credentialsFrom for username and password")
 		return true
 	}
+	logrus.Infof("Checking credentials, if not passed random string will be generated and dumped into clusterSecret")
 	return false
 }
 
