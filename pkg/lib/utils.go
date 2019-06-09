@@ -60,14 +60,14 @@ func UpdateCrStatus(client client.Client, object runtime.Object) error {
 	return nil
 }
 
-func SecretExists(namespace, secretName string, client client.Client) bool {
+func SecretExists(namespace, secretName string, client client.Client) (bool, *v1.Secret) {
 	secretFound := &v1.Secret{}
 	err := client.Get(context.TODO(), types.NamespacedName{
 		Name: secretName, Namespace: namespace},
 		secretFound)
 	if err != nil && errors.IsNotFound(err) {
-		return false
+		return false, nil
 	}
 
-	return true
+	return true, secretFound
 }

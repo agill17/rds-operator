@@ -100,6 +100,7 @@ func validateRequiredInput(cr *kubev1alpha1.DBCluster) error {
 	if cr.Spec.DeleteSpec == nil {
 		return errors.New("deleteClusterSpecCannotBeEmptyError")
 	}
+
 	return nil
 }
 
@@ -117,7 +118,8 @@ func getActionType(cr *kubev1alpha1.DBCluster) rdsLib.RDSAction {
 
 func (r *ReconcileDBCluster) createSecret(cr *kubev1alpha1.DBCluster, actionType rdsLib.RDSAction) error {
 	secretObj := r.getSecretObj(cr, actionType)
-	if !lib.SecretExists(cr.Namespace, secretObj.Name, r.client) {
+	exists, _ := lib.SecretExists(cr.Namespace, secretObj.Name, r.client)
+	if !exists {
 		logrus.Infof("Namespace: %v | Secret Name: %v | Msg: Creating Secret", cr.Namespace, secretObj.Name)
 		return r.client.Create(context.TODO(), secretObj)
 	}

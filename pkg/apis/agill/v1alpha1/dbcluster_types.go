@@ -3,6 +3,7 @@ package v1alpha1
 import (
 	"github.com/aws/aws-sdk-go/service/rds"
 	"github.com/jinzhu/copier"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -17,9 +18,16 @@ type DBClusterStatus struct {
 }
 
 type DBClusterSpec struct {
+	CredentialsFrom           CredentialsFrom                        `json:"credentialsFrom,omitempty"`
 	CreateClusterSpec         *rds.CreateDBClusterInput              `json:"createClusterSpec,omitempty"`
 	CreateClusterFromSnapshot *rds.RestoreDBClusterFromSnapshotInput `json:"createClusterFromSnapshot,omitempty"`
 	DeleteSpec                *rds.DeleteDBClusterInput              `json:"deleteClusterSpec,required"`
+}
+
+type CredentialsFrom struct {
+	UsernameKey string                   `json:"username"`
+	PasswordKey string                   `json:"password"`
+	SecretName  *v1.LocalObjectReference `json:"secretName"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

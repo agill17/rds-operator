@@ -64,8 +64,19 @@ func (r *ReconcileDBCluster) setCRDeleteSpecSnapName(cr *kubev1alpha1.DBCluster,
 func (r *ReconcileDBCluster) setCRUsername(cr *kubev1alpha1.DBCluster, rdsAction rdsLib.RDSAction) error {
 
 	if rdsAction == rdsLib.CREATE && cr.Spec.CreateClusterSpec.MasterUsername == nil {
-		u := lib.RandStringBytes(9)
-		cr.Spec.CreateClusterSpec.MasterUsername = &u
+		if r.useCredentialsFrom(cr) {
+			if exists, secretObj := lib.SecretExists(
+				cr.Namespace,
+				cr.Spec.CredentialsFrom.SecretName.Name,
+				r.client); exists {
+				su := string(secretObj.Data[cr.Spec.CredentialsFrom.UsernameKey])
+				cr.Spec.CreateClusterSpec.MasterUsername = &su
+			}
+		} else {
+			u := lib.RandStringBytes(9)
+			cr.Spec.CreateClusterSpec.MasterUsername = &u
+		}
+
 		if err := lib.UpdateCr(r.client, cr); err != nil {
 			logrus.Errorf("Failed to update DBCluster CR while setting up username: %v", err)
 			return err
@@ -76,14 +87,32 @@ func (r *ReconcileDBCluster) setCRUsername(cr *kubev1alpha1.DBCluster, rdsAction
 
 func (r *ReconcileDBCluster) setCRPassword(cr *kubev1alpha1.DBCluster, rdsAction rdsLib.RDSAction) error {
 	if rdsAction == rdsLib.CREATE && cr.Spec.CreateClusterSpec.MasterUserPassword == nil {
-		p := lib.RandStringBytes(9)
-		cr.Spec.CreateClusterSpec.MasterUserPassword = &p
+		if r.useCredentialsFrom(cr) {
+			if exists, secretObj := lib.SecretExists(
+				cr.Namespace,
+				cr.Spec.CredentialsFrom.SecretName.Name,
+				r.client); exists {
+				sp := string(secretObj.Data[cr.Spec.CredentialsFrom.PasswordKey])
+				cr.Spec.CreateClusterSpec.MasterUsername = &sp
+			}
+		} else {
+			p := lib.RandStringBytes(9)
+			cr.Spec.CreateClusterSpec.MasterUserPassword = &p
+		}
+
 		if err := lib.UpdateCr(r.client, cr); err != nil {
 			logrus.Errorf("Failed to update DBCluster CR while setting up credentials: %v", err)
 			return err
 		}
 	}
 	return nil
+}
+
+func (r *ReconcileDBCluster) useCredentialsFrom(cr *kubev1alpha1.DBCluster) bool {
+	if cr.Spec.CredentialsFrom.SecretName != nil && cr.Spec.CredentialsFrom.UsernameKey != "" && cr.Spec.CredentialsFrom.PasswordKey != "" {
+		return true
+	}
+	return false
 }
 
 func (r *ReconcileDBCluster) setUpCredentialsIfNeeded(cr *kubev1alpha1.DBCluster, rdsAction rdsLib.RDSAction) error {
