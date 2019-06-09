@@ -39,8 +39,8 @@ spec:
     DBClusterIdentifier: amrit-aurora-cluster ## required
     DatabaseName: test
     DeletionProtection: false
-    # MasterUsername: root # not required ( generates a random one if not passed )
-    # MasterUserPassword: password # not required ( generates a random one if not passed )
+    # MasterUsername: root # not required if credentialsFrom set ( if none passed: generates a random one if not passed )
+    # MasterUserPassword: password # not required if credentialsFrom set ( if none passed: generates a random one if not passed )
     StorageEncrypted: false
   deleteClusterSpec:
     SkipFinalSnapshot: false
