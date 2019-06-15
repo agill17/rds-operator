@@ -1,4 +1,7 @@
 # RDS Operator
+
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/733bc755125b4a5193016e1fbf460700)](https://app.codacy.com/app/agill17/rds-operator?utm_source=github.com&utm_medium=referral&utm_content=agill17/rds-operator&utm_campaign=Badge_Grade_Settings)
+
 ### Install and Deploy 
 
 #### Option 1: kubectl way
