@@ -1,6 +1,8 @@
 package rdsLib
 
-import "strings"
+import (
+	"strings"
+)
 
 type RDSAction string
 type RDS_RESOURCE_STATE string

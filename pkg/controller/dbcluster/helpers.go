@@ -3,8 +3,6 @@ package dbcluster
 import (
 	"context"
 	"errors"
-	"fmt"
-	"os/exec"
 	"strings"
 
 	"github.com/agill17/rds-operator/pkg/rdsLib"
@@ -13,33 +11,6 @@ import (
 	"github.com/agill17/rds-operator/pkg/lib"
 	"github.com/sirupsen/logrus"
 )
-
-func (r *ReconcileDBCluster) getCurrentStatusFromAWS(dbClusterID string) string {
-	exists, out := lib.DbClusterExists(&lib.RDSGenerics{RDSClient: r.rdsClient, ClusterID: dbClusterID})
-	if exists {
-		return *out.DBClusters[0].Status
-	}
-	return ""
-}
-
-// use for cluster and instance specs
-func (r *ReconcileDBCluster) setDBID(ns, crName string) string {
-	return ns + "-" + crName
-}
-
-func getLatestClusterSnapID(clusterDBID, ns, region string) (string, error) {
-	cmd := fmt.Sprintf("aws rds describe-db-cluster-snapshots  --query \"DBClusterSnapshots[?DBClusterIdentifier=='%v']\" --region %v | jq -r 'max_by(.SnapshotCreateTime).DBClusterSnapshotIdentifier'", clusterDBID, region)
-	snapID, err := exec.Command("/bin/sh", "-c", cmd).Output()
-
-	if err != nil {
-		logrus.Errorf("Failed to execute aws-cli command: %s", err)
-		return "", err
-	}
-
-	logrus.Infof("Namespace: %v | DB Identifier: %v | Msg: Latest snapshot id available: %v", ns, clusterDBID, strings.TrimSpace(string(snapID)))
-
-	return strings.TrimSpace(string(snapID)), err
-}
 
 func (r *ReconcileDBCluster) updateLocalStatusWithAwsStatus(cr *kubev1alpha1.DBCluster, clusterID string) (string, error) {
 
