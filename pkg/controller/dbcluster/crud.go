@@ -46,20 +46,21 @@ func (r *ReconcileDBCluster) crud(cr *kubev1alpha1.DBCluster,
 
 	}
 
-	// return err if not ready in AWS yet
-	if err := r.handlePhases(cr, clusterID); err != nil {
-		return err
-	}
+	if !statusCreated {
+		// return err if not ready in AWS yet
+		if err := r.handlePhases(cr, clusterID); err != nil {
+			return err
+		}
+		cr.Status.Created = true
+		_, cr.Status.DescriberClusterOutput = lib.DbClusterExists(
+			&lib.RDSGenerics{RDSClient: r.rdsClient,
+				ClusterID: clusterID})
+		if err := lib.UpdateCrStatus(r.client, cr); err != nil {
+			return err
+		}
 
-	cr.Status.Created = true
-	_, cr.Status.DescriberClusterOutput = lib.DbClusterExists(
-		&lib.RDSGenerics{RDSClient: r.rdsClient,
-			ClusterID: clusterID})
-	if err := lib.UpdateCrStatus(r.client, cr); err != nil {
-		return err
+		spew.Dump(cr.Status)
 	}
-
-	spew.Dump(cr.Status)
 
 	return nil
 }

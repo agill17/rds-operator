@@ -27,7 +27,7 @@ func NewInstance(rdsClient *rds.RDS,
 
 // Create Instance
 func (i *instance) Create() error {
-	if exists, _ := i.instanceExists(); !exists {
+	if exists := i.instanceExists(); !exists {
 		if _, err := i.rdsClient.CreateDBInstance(i.createIn); err != nil {
 			logrus.Errorf("Failed to create new DB Instance: %v", err)
 			return err
@@ -39,7 +39,7 @@ func (i *instance) Create() error {
 // Delete Instance
 func (i *instance) Delete() error {
 
-	if exists, _ := i.instanceExists(); exists {
+	if exists := i.instanceExists(); exists {
 		if _, err := i.rdsClient.DeleteDBInstance(i.deleteIn); err != nil {
 			logrus.Errorf("Failed to delete DB Instance: %v", err)
 			return err
@@ -51,7 +51,7 @@ func (i *instance) Delete() error {
 // Restore Instance
 func (i *instance) Restore() error {
 
-	if exists, _ := i.instanceExists(); !exists {
+	if exists := i.instanceExists(); !exists {
 		if _, err := i.rdsClient.RestoreDBInstanceFromDBSnapshot(i.restoreFromSnapIn); err != nil {
 			logrus.Errorf("Failed to restore DB cluster from snapshot :%v", err)
 			return err
@@ -60,13 +60,7 @@ func (i *instance) Restore() error {
 	return nil
 }
 
-// GetAWSStatus gets instance status
-func (i *instance) GetAWSStatus() RDS_RESOURCE_STATE {
-	_, state := i.instanceExists()
-	return state
-}
-
-func (i *instance) instanceExists() (bool, RDS_RESOURCE_STATE) {
+func (i *instance) instanceExists() bool {
 	var insID string
 	if i.createIn != nil {
 		insID = *i.createIn.DBInstanceIdentifier
@@ -74,11 +68,7 @@ func (i *instance) instanceExists() (bool, RDS_RESOURCE_STATE) {
 		insID = *i.restoreFromSnapIn.DBInstanceIdentifier
 	}
 
-	exists, out := lib.DBInstanceExists(&lib.RDSGenerics{RDSClient: i.rdsClient, InstanceID: insID})
-	var insState string
-	if exists {
-		insState = *out.DBInstances[0].DBInstanceStatus
-	}
+	exists, _ := lib.DBInstanceExists(&lib.RDSGenerics{RDSClient: i.rdsClient, InstanceID: insID})
 
-	return exists, parseRemoteStatus(insState)
+	return exists
 }
