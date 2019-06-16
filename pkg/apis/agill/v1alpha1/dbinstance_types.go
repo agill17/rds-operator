@@ -20,6 +20,28 @@ type DBInstanceSpec struct {
 	DeleteInstanceSpec      *rds.DeleteDBInstanceInput                `json:"deleteInstanceSpec,required"`
 }
 
+/*
+	When using dbInstance with dbCluster why do we need a deleteSpec here?
+	What about snapshotting dbInstance when attached to DBCluster
+
+	Read here;
+	https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/USER_DeleteInstance.html
+	"
+	If you try to delete the cluster's last DB instance,
+	the behavior depends on the method you use.
+	You can't delete the last DB instance through the AWS Management Console,
+	because doing so also deletes the cluster.
+
+	You can delete the last DB instance through
+	the AWS CLI or API even if the DB cluster has deletion protection enabled.
+	In this case, the DB cluster itself still exists and your data is preserved.
+	You can access the data by attaching new DB instances to the cluster
+	"
+
+	So why deleteSpec in dbInstance?
+	- To support standalone rds instances ( not aurora-* )
+*/
+
 // DBInstanceStatus defines the observed state of DBInstance
 type DBInstanceStatus struct {
 	DBClusterMarkedAvail     bool                           `json:"dbClusterMarkedAvail"`

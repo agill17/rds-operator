@@ -118,10 +118,8 @@ func (r *ReconcileDBCluster) Reconcile(request reconcile.Request) (reconcile.Res
 	}
 
 	// create/update secret
-	if actionType != rdsLib.DELETE {
-		if err := r.createSecret(cr, actionType); err != nil && !errors.IsForbidden(err) {
-			return reconcile.Result{}, err
-		}
+	if err := r.createSecret(cr, actionType); err != nil && !errors.IsForbidden(err) {
+		return reconcile.Result{}, err
 	}
 
 	return reconcile.Result{Requeue: true}, nil
