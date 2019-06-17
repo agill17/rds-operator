@@ -23,6 +23,7 @@
   - DBInstance: `spec.createInstanceFromSnapshot` :white_check_mark:
 
 ## TODO 
+- Add docs
 - Make Secret resource conditional for both DBCluster and DBInstance ( some folks might want to pass credentials like username and password from a k8s secret so there is no need to deploy another secret with the same information )
 - Add support for initDB Job in dbCluster so that a user can have their db imported from an existing image ( DBCluster & DBInstance )
 - Make delete optional and get rid of deleteSpec to enforce snapshotting before deleting rds.
