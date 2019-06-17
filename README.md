@@ -8,18 +8,19 @@
 
 #### Option 2: Helm chart
 
-
+---
 #### DBCluster vs DBInstance
-##### Use DBCluster when creating anything with aurora ( so mysql or postgresql )
-##### Why use DBCluster? Because of how AWS SDK works.
-##### Their docs for DBCluster state the following
-    The name of the database engine to be used for this DB cluster.
+- Use DBCluster when creating anything with aurora ( so mysql or postgresql )
+- Why use DBCluster? Because of how AWS SDK works.
+- Their docs for DBCluster state the following
+  ```The name of the database engine to be used for this DB cluster.
     //
     // Valid Values: aurora (for MySQL 5.6-compatible Aurora), aurora-mysql (for
     // MySQL 5.7-compatible Aurora), and aurora-postgresql
     //
     // Engine is a required field
     Engine *string `type:"string" required:"true"`
+   ```
 
 # Features
 - _**Create**_ ( **All RDS Databases**, Subnet groups )
