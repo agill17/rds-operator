@@ -10,7 +10,7 @@
 
 ---
 #### DBCluster vs DBInstance
-- Use DBCluster when creating anything with aurora ( so mysql or postgresql )
+- Use DBCluster when creating anything with aurora ( so aurora-mysql or aurora-postgresql )
 - Why use DBCluster? Because of how AWS SDK works.
 - Their docs for DBCluster state the following
   ```The name of the database engine to be used for this DB cluster.
