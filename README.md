@@ -21,6 +21,7 @@
     // Engine is a required field
     Engine *string `type:"string" required:"true"`
    ```
+- So the only valid values for DBClusters are aurora-mysql and aurora-postgresql 
 
 # Features
 - _**Create**_ ( **All RDS Databases**, Subnet groups )
