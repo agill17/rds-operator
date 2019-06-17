@@ -24,7 +24,7 @@
 - So the only valid values for DBClusters are aurora-mysql and aurora-postgresql 
 - Once DBCluster is created, you must attach instances to that cluster, thats where DBInstance comes into the picture.
 - How to attach a DBInstance to a DBCluster? You have to provide DBClusterIdentifier within DBInstance.
-- When to use standalone DBInstance? -- whenever you want to creat anything thats __*not*__ aurora.
+- When to use standalone DBInstance? -- whenever you want to create anything thats __*not*__ aurora.
 
 # Features
 - _**Create**_ ( **All RDS Databases**, Subnet groups )
