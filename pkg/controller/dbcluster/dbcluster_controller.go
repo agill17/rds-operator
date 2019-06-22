@@ -2,6 +2,7 @@ package dbcluster
 
 import (
 	"context"
+	"time"
 
 	"github.com/agill17/rds-operator/pkg/rdsLib"
 	"github.com/sirupsen/logrus"
@@ -102,23 +103,33 @@ func (r *ReconcileDBCluster) Reconcile(request reconcile.Request) (reconcile.Res
 		}
 	}
 
+	// create/update secret
+	// this also updates CR status with what secret to use and what userKey and passKey to use
+	// whether that key is coming from a user provided secret to use or from internally
+	if err := r.reconcileSecret(cr, actionType); err != nil && !errors.IsForbidden(err) {
+		return reconcile.Result{}, err
+	}
+	secretName, userKey, passKey := cr.Status.SecretName, cr.Status.UsernameKey, cr.Status.PasswordKey
+
 	// returns cluster struct which is also part of rds interface
 	// so we can call all funcs that are part of the interface as long as cluster satifies the interface
 	// cluster obj implements and satifies RDS interface by implementing all methods of that interface
-	clusterObj := rdsLib.NewCluster(r.rdsClient, cr.Spec.CreateClusterSpec,
-		cr.Spec.DeleteSpec, cr.Spec.CreateClusterFromSnapshot)
+	clusterObj := rdsLib.NewCluster(r.rdsClient,
+		cr.Spec.CreateClusterSpec,
+		cr.Spec.DeleteSpec,
+		cr.Spec.CreateClusterFromSnapshot,
+		cr.Namespace, secretName, userKey, passKey, r.client)
 
 	if err := r.crud(cr, clusterObj, actionType); err != nil {
 		switch err.(type) {
 		case *lib.ErrorResourceCreatingInProgress:
 			logrus.Errorf("Namespace: %v | CR: %v | Msg: Cluster still in creating phase. Reconciling to check again.", cr.Namespace, cr.Name)
-			return reconcile.Result{Requeue: true}, nil
+			return reconcile.Result{Requeue: true, RequeueAfter: time.Second * 60}, nil
 		}
 		return reconcile.Result{}, err
 	}
 
-	// create/update secret
-	if err := r.createSecret(cr, actionType); err != nil && !errors.IsForbidden(err) {
+	if err := r.createExternalSvc(cr); err != nil && !errors.IsForbidden(err) {
 		return reconcile.Result{}, err
 	}
 

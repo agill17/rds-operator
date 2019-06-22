@@ -6,10 +6,11 @@ import (
 	"strings"
 	"time"
 
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	"github.com/agill17/rds-operator/pkg/lib"
 	"github.com/aws/aws-sdk-go/service/rds"
 	"github.com/sirupsen/logrus"
-	"k8s.io/apimachinery/pkg/runtime"
 )
 
 type cluster struct {
@@ -17,11 +18,21 @@ type cluster struct {
 	createInput          *rds.CreateDBClusterInput
 	deleteInput          *rds.DeleteDBClusterInput
 	restoreFromSnapInput *rds.RestoreDBClusterFromSnapshotInput
-	object               runtime.Object
 }
 
 func NewCluster(rdsClient *rds.RDS, createInput *rds.CreateDBClusterInput,
-	deleteInput *rds.DeleteDBClusterInput, restoreFromSnapInput *rds.RestoreDBClusterFromSnapshotInput) RDS {
+	deleteInput *rds.DeleteDBClusterInput,
+	restoreFromSnapInput *rds.RestoreDBClusterFromSnapshotInput,
+	ns, secretName, userKey, passKey string, client client.Client) RDS {
+
+	// ALWAYS grab credentials from a secret
+	// a secret WILL exist whether its the user creates it or gets created by the controller
+	_, secret := lib.SecretExists(ns, secretName, client)
+	username := string(secret.Data[userKey])
+	password := string(secret.Data[passKey])
+	createInput.MasterUsername = &username
+	createInput.MasterUserPassword = &password
+
 	return &cluster{
 		rdsClient:            rdsClient,
 		createInput:          createInput,

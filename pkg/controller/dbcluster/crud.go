@@ -13,6 +13,16 @@ func (r *ReconcileDBCluster) crud(cr *kubev1alpha1.DBCluster,
 	clusterObj rdsLib.RDS, actionType rdsLib.RDSAction) error {
 	clusterID := getDBClusterID(cr, actionType)
 	statusCreated := cr.Status.Created
+	// var secretName string
+	// if useCredentialsFrom(cr) {
+	// 	secretName = cr.Spec.CredentialsFrom.SecretName.Name
+	// } else {
+	// 	secretName = getClusterSecretName(cr)
+	// }
+	// secretExists, secret := lib.SecretExists(cr.Namespace, secretName, r.client)
+	// if !secretExists {
+	// 	return errors.New("SecretDoesNotExist")
+	// }
 
 	switch actionType {
 
@@ -58,7 +68,6 @@ func (r *ReconcileDBCluster) crud(cr *kubev1alpha1.DBCluster,
 		if err := lib.UpdateCrStatus(r.client, cr); err != nil {
 			return err
 		}
-
 		spew.Dump(cr.Status)
 	}
 

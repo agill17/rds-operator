@@ -14,11 +14,6 @@ import (
 )
 
 func (r *ReconcileDBCluster) setUpDefaultsIfNeeded(cr *kubev1alpha1.DBCluster, rdsAction rdsLib.RDSAction) error {
-
-	if err := r.setUpCredentialsIfNeeded(cr, rdsAction); err != nil {
-		return err
-	}
-
 	if err := r.setCRDeleteClusterID(cr, rdsAction); err != nil {
 		return err
 	}
@@ -27,7 +22,7 @@ func (r *ReconcileDBCluster) setUpDefaultsIfNeeded(cr *kubev1alpha1.DBCluster, r
 		return err
 	}
 
-	return nil
+	return r.setSvcName(cr)
 }
 
 // used when deleteSpec.DBClusterID is not set, than use the one provided within cr.createClusterSpec
@@ -61,70 +56,10 @@ func (r *ReconcileDBCluster) setCRDeleteSpecSnapName(cr *kubev1alpha1.DBCluster,
 	return nil
 }
 
-func (r *ReconcileDBCluster) setCRUsername(cr *kubev1alpha1.DBCluster, rdsAction rdsLib.RDSAction) error {
-
-	if rdsAction == rdsLib.CREATE && cr.Spec.CreateClusterSpec.MasterUsername == nil {
-		if r.useCredentialsFrom(cr) {
-			if exists, secretObj := lib.SecretExists(
-				cr.Namespace,
-				cr.Spec.CredentialsFrom.SecretName.Name,
-				r.client); exists {
-				su := string(secretObj.Data[cr.Spec.CredentialsFrom.UsernameKey])
-				cr.Spec.CreateClusterSpec.MasterUsername = &su
-			}
-		} else {
-			u := lib.RandStringBytes(9)
-			cr.Spec.CreateClusterSpec.MasterUsername = &u
-		}
-
-		if err := lib.UpdateCr(r.client, cr); err != nil {
-			logrus.Errorf("Failed to update DBCluster CR while setting up username: %v", err)
-			return err
-		}
+func (r *ReconcileDBCluster) setSvcName(cr *kubev1alpha1.DBCluster) error {
+	if cr.Spec.ServiceName == "" {
+		cr.Spec.ServiceName = fmt.Sprintf("%v-%v-rds-cluster", cr.Name, cr.Namespace)
+		return lib.UpdateCr(r.client, cr)
 	}
-	return nil
-}
-
-func (r *ReconcileDBCluster) setCRPassword(cr *kubev1alpha1.DBCluster, rdsAction rdsLib.RDSAction) error {
-	if rdsAction == rdsLib.CREATE && cr.Spec.CreateClusterSpec.MasterUserPassword == nil {
-		if r.useCredentialsFrom(cr) {
-			if exists, secretObj := lib.SecretExists(
-				cr.Namespace,
-				cr.Spec.CredentialsFrom.SecretName.Name,
-				r.client); exists {
-				sp := string(secretObj.Data[cr.Spec.CredentialsFrom.PasswordKey])
-				cr.Spec.CreateClusterSpec.MasterUserPassword = &sp
-			}
-		} else {
-			p := lib.RandStringBytes(9)
-			cr.Spec.CreateClusterSpec.MasterUserPassword = &p
-		}
-
-		if err := lib.UpdateCr(r.client, cr); err != nil {
-			logrus.Errorf("Failed to update DBCluster CR while setting up credentials: %v", err)
-			return err
-		}
-	}
-	return nil
-}
-
-func (r *ReconcileDBCluster) useCredentialsFrom(cr *kubev1alpha1.DBCluster) bool {
-	if cr.Spec.CredentialsFrom.UsernameKey != "" && cr.Spec.CredentialsFrom.PasswordKey != "" {
-		logrus.Infof("Using spec.credentialsFrom for username and password")
-		return true
-	}
-	logrus.Infof("Checking credentials, if not passed random string will be generated and dumped into clusterSecret")
-	return false
-}
-
-func (r *ReconcileDBCluster) setUpCredentialsIfNeeded(cr *kubev1alpha1.DBCluster, rdsAction rdsLib.RDSAction) error {
-	if err := r.setCRUsername(cr, rdsAction); err != nil {
-		return err
-	}
-
-	if err := r.setCRPassword(cr, rdsAction); err != nil {
-		return err
-	}
-
 	return nil
 }

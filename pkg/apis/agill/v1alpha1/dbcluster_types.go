@@ -9,15 +9,17 @@ import (
 
 type DBClusterStatus struct {
 	Created                  bool                          `json:"created"`
+	SecretName               string                        `json:"secretName"`
+	UsernameKey              string                        `json:"usernameKey"`
+	PasswordKey              string                        `json:"passwordKey"`
 	DescriberClusterOutput   *rds.DescribeDBClustersOutput `json:"describeClusterOutput"`
 	RestoredFromSnapshotName string                        `json:"restoredFromSnapshotName"`
-	SecretUpdateNeeded       bool                          `json:"secretUpdateNeeded"`
-	Username                 string                        `json:"username"`
-	Password                 string                        `json:"password"`
 	CurrentPhase             string                        `json:"currentPhase"`
 }
 
 type DBClusterSpec struct {
+	ServiceName               string                                 `json:"serviceName"`
+	NewSecretName             string                                 `json:"newSecretName"`
 	CredentialsFrom           CredentialsFrom                        `json:"credentialsFrom,omitempty"`
 	CreateClusterSpec         *rds.CreateDBClusterInput              `json:"createClusterSpec,omitempty"`
 	CreateClusterFromSnapshot *rds.RestoreDBClusterFromSnapshotInput `json:"createClusterFromSnapshot,omitempty"`
@@ -39,7 +41,6 @@ type DBCluster struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 	Spec              DBClusterSpec   `json:"spec"`
 	Status            DBClusterStatus `json:"status,omitempty"`
-	ClusterSecretName string          `json:"clusterSecretName"`
 	Region            string          `json:"region"`
 }
 

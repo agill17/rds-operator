@@ -3,60 +3,16 @@ package dbcluster
 import (
 	"context"
 	"errors"
-	"strings"
 
 	"github.com/agill17/rds-operator/pkg/rdsLib"
+	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	kubev1alpha1 "github.com/agill17/rds-operator/pkg/apis/agill/v1alpha1"
-	"github.com/agill17/rds-operator/pkg/lib"
-	"github.com/sirupsen/logrus"
 )
 
-func (r *ReconcileDBCluster) updateLocalStatusWithAwsStatus(cr *kubev1alpha1.DBCluster, clusterID string) (string, error) {
-
-	exists, out := lib.DbClusterExists(&lib.RDSGenerics{RDSClient: r.rdsClient, ClusterID: clusterID})
-	currentLocalPhase := cr.Status.CurrentPhase
-
-	if exists {
-		logrus.Infof("DBCluster CR: %v | Namespace: %v | Current phase in AWS: %v", cr.Name, cr.Namespace, *out.DBClusters[0].Status)
-		logrus.Infof("DBCluster CR: %v | Namespace: %v | Current phase in CR: %v", cr.Name, cr.Namespace, currentLocalPhase)
-
-		if currentLocalPhase != strings.ToLower(*out.DBClusters[0].Status) {
-			logrus.Warnf("Updating current phase in CR for namespace: %v", cr.Namespace)
-			cr.Status.CurrentPhase = strings.ToLower(*out.DBClusters[0].Status)
-			if err := lib.UpdateCrStatus(r.client, cr); err != nil {
-				return "", err
-			}
-		}
-	}
-	return cr.Status.CurrentPhase, nil
-
-}
-
-func (r *ReconcileDBCluster) handlePhases(cr *kubev1alpha1.DBCluster, clusterID string) error {
-
-	// always update first before checking ( so restore and delete can be handled )
-	currentPhase, _ := r.updateLocalStatusWithAwsStatus(cr, clusterID)
-
-	switch currentPhase {
-	case "available":
-		return nil
-	case "creating", "backing-up", "restoring":
-		return &lib.ErrorResourceCreatingInProgress{Message: "ClusterCreatingInProgress"}
-	case "deleting":
-		return &lib.ErrorResourceDeletingInProgress{Message: "ClusterDeletingInProgress"}
-	case "":
-		return errors.New("ClusterNotYetInitilaized")
-	}
-	return nil
-}
-
-func getClusterSecretName(cr *kubev1alpha1.DBCluster) string {
-	name := cr.ClusterSecretName
-	if len(name) == 0 {
-		name = cr.Name + "-secret"
-	}
-	return name
+func getClusterSecretName(crName string) string {
+	return crName + "-secret"
 }
 
 func validateRequiredInput(cr *kubev1alpha1.DBCluster) error {
@@ -87,17 +43,6 @@ func getActionType(cr *kubev1alpha1.DBCluster) rdsLib.RDSAction {
 	return rdsLib.UNKNOWN
 }
 
-func (r *ReconcileDBCluster) createSecret(cr *kubev1alpha1.DBCluster, actionType rdsLib.RDSAction) error {
-	secretObj := r.getSecretObj(cr, actionType)
-	exists, _ := lib.SecretExists(cr.Namespace, secretObj.Name, r.client)
-	if !exists {
-		logrus.Infof("Namespace: %v | Secret Name: %v | Msg: Creating Secret", cr.Namespace, secretObj.Name)
-		return r.client.Create(context.TODO(), secretObj)
-	}
-
-	return nil
-}
-
 func getDBClusterID(cr *kubev1alpha1.DBCluster, actionType rdsLib.RDSAction) string {
 	switch actionType {
 	case rdsLib.CREATE:
@@ -112,4 +57,26 @@ func getDBClusterID(cr *kubev1alpha1.DBCluster, actionType rdsLib.RDSAction) str
 		}
 	}
 	return ""
+}
+
+func (r *ReconcileDBCluster) createExternalSvc(cr *kubev1alpha1.DBCluster) error {
+	svc := getClusterSvc(cr)
+	_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, svc, func(runtime.Object) error {
+		controllerutil.SetControllerReference(cr, svc, r.scheme)
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// when useCredentialsFrom is true, no need to deploy a new secret
+// else deploy a secret
+func useCredentialsFrom(cr *kubev1alpha1.DBCluster) bool {
+	if cr.Spec.CredentialsFrom.UsernameKey != "" && cr.Spec.CredentialsFrom.PasswordKey != "" {
+		return true
+	}
+	return false
 }
