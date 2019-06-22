@@ -29,7 +29,13 @@
 # Features
 - _**Create**_ ( **All RDS Databases**, Subnet groups )
   - DBCluster: `spec.createClusterSpec` :white_check_mark:
+    - credentialsFromSecret: `spec.credentialsFrom` :white_check_mark:
+    - externalNameService: `spec.serviceName` :white_check_mark:
+    - initDBJob `spec.initDBJob` :x:
   - DBInstance: `spec.createInstanceSpec` :white_check_mark: 
+    - credentialsFromSecret: `spec.credentialsFrom` :x:
+    - externalNameService: `spec.serviceName` :white_check_mark: ( primary db instance )
+    - initDBJob `spec.initDBJob` :x: ( if attached to DBCluster, this wont run at all. )
 - _**Delete**_ ( **All RDS Databases**, Subnet groups ) :white_check_mark:
   - DBCluster: `spec.deleteClusterSpec` :white_check_mark:
   - DBInstance: `spec.deleteInstanceSpec` :white_check_mark: 

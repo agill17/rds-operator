@@ -73,7 +73,7 @@ func getSecretName(cr *kubev1alpha1.DBInstance) string {
 func getSvcName(cr *kubev1alpha1.DBInstance) string {
 	sName := cr.Spec.ServiceName
 	if sName == "" {
-		sName = cr.Name + "-svc"
+		sName = cr.Name + "-instance-service"
 	}
 	return sName
 }
