@@ -123,10 +123,10 @@ func (r *ReconcileDBCluster) Reconcile(request reconcile.Request) (reconcile.Res
 		case *lib.ErrorResourceCreatingInProgress:
 			logrus.Errorf("Namespace: %v | CR: %v | Msg: Cluster still in creating phase. Reconciling to check again after 60 seconds", cr.Namespace, cr.Name)
 			return reconcile.Result{Requeue: true, RequeueAfter: time.Second * 60}, nil
-		case *lib.KubernetesSecretGettingDeleted:
+		case *lib.ErrorKubernetesSecretGettingDeleted:
 			logrus.Errorf("Namespace: %v | CR: %v | Msg: K8S objects are in deleting phase. Stopping reconcile..", cr.Namespace, cr.Name)
 			return reconcile.Result{Requeue: false}, nil
-		case *lib.KubernetesSecretDoesNotExist:
+		case *lib.ErrorKubernetesSecretDoesNotExist:
 			logrus.Errorf("Namespace: %v | CR: %v | Msg: %v", cr.Namespace, cr.Name, err)
 			return reconcile.Result{Requeue: true, RequeueAfter: time.Second * 60}, nil
 		}
