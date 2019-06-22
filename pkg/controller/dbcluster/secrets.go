@@ -2,9 +2,6 @@ package dbcluster
 
 import (
 	"context"
-	"errors"
-
-	"github.com/awslabs/aws-sdk-go/service/rds"
 
 	"github.com/agill17/rds-operator/pkg/rdsLib"
 
@@ -47,12 +44,6 @@ func (r *ReconcileDBCluster) reconcileSecret(cr *kubev1alpha1.DBCluster, rdsActi
 		}
 	}
 
-	// do not continue if secret does not exist
-	// ( this is to make sure if user is passing a secret, we dont just assume it exists )
-	if exists, _ := lib.SecretExists(cr.Namespace, secretName, r.client); !exists {
-		return errors.New("SecretNotFoundError")
-	}
-
 	return setSecretStatusInCR(cr, r.client, secretName, userKey, passKey)
 }
 
@@ -61,6 +52,7 @@ func (r *ReconcileDBCluster) createSecretIfNeeded(cr *kubev1alpha1.DBCluster, rd
 	secretObj := getSecretObj(cr, rdsAction)
 	_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, secretObj, func(runtime.Object) error {
 		controllerutil.SetControllerReference(cr, secretObj, r.scheme)
+
 		return nil
 	})
 	if err != nil {

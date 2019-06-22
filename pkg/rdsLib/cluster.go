@@ -8,41 +8,43 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	kubev1alpha1 "github.com/agill17/rds-operator/pkg/apis/agill/v1alpha1"
 	"github.com/agill17/rds-operator/pkg/lib"
 	"github.com/aws/aws-sdk-go/service/rds"
 	"github.com/sirupsen/logrus"
 )
 
 type cluster struct {
+	k8sClient            client.Client
 	rdsClient            *rds.RDS
 	createInput          *rds.CreateDBClusterInput
 	deleteInput          *rds.DeleteDBClusterInput
 	restoreFromSnapInput *rds.RestoreDBClusterFromSnapshotInput
+	runtimeObj           *kubev1alpha1.DBCluster
 }
 
 func NewCluster(rdsClient *rds.RDS, createInput *rds.CreateDBClusterInput,
 	deleteInput *rds.DeleteDBClusterInput,
 	restoreFromSnapInput *rds.RestoreDBClusterFromSnapshotInput,
-	ns, secretName, userKey, passKey string, client client.Client) RDS {
-
-	// ALWAYS grab credentials from a secret
-	// a secret WILL exist whether its the user creates it or gets created by the controller
-	_, secret := lib.SecretExists(ns, secretName, client)
-	username := string(secret.Data[userKey])
-	password := string(secret.Data[passKey])
-	createInput.MasterUsername = &username
-	createInput.MasterUserPassword = &password
+	cr *kubev1alpha1.DBCluster, client client.Client) RDS {
 
 	return &cluster{
 		rdsClient:            rdsClient,
 		createInput:          createInput,
 		restoreFromSnapInput: restoreFromSnapInput,
 		deleteInput:          deleteInput,
+		k8sClient:            client,
+		runtimeObj:           cr,
 	}
 }
 
 // Create Cluster
 func (dh *cluster) Create() error {
+
+	if err := dh.addCredsToClusterInput(); err != nil {
+		return err
+	}
+
 	if exists := dh.clusterExists(); !exists {
 		if _, err := dh.rdsClient.CreateDBCluster(dh.createInput); err != nil {
 			logrus.Errorf("Failed to create new DB Cluster, %v", err)
@@ -101,6 +103,37 @@ func (dh *cluster) clusterExists() bool {
 	)
 
 	return exists
+}
+
+func (dh *cluster) addCredsToClusterInput() error {
+	// ALWAYS grab credentials from a secret
+	// a secret WILL exist whether its the user creates it or gets created by the controller
+	ns := dh.runtimeObj.Namespace
+	secretName := dh.runtimeObj.Status.SecretName
+	userKey := dh.runtimeObj.Status.UsernameKey
+	passKey := dh.runtimeObj.Status.PasswordKey
+	exists, secret := lib.SecretExists(ns, secretName, dh.k8sClient)
+	// incase it does not exist
+	if !exists {
+		return &lib.KubernetesSecretDoesNotExist{Message: "K8S secret does not exist in namespace: " + ns}
+	}
+
+	//  or is getting deleted
+	if secret.DeletionTimestamp != nil {
+		return &lib.KubernetesSecretGettingDeleted{
+			Message: "K8S secret is getting deleted: " + ns,
+		}
+	}
+
+	if dh.createInput.MasterUsername == nil && dh.createInput.MasterUserPassword == nil {
+		username := string(secret.Data[userKey])
+		password := string(secret.Data[passKey])
+		dh.createInput.MasterUsername = &username
+		dh.createInput.MasterUserPassword = &password
+		logrus.Infof("addCredsToClusterInput got invoked")
+	}
+
+	return nil
 }
 
 func (dh *cluster) setTimestampInSnapshotName() {

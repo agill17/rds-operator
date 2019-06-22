@@ -17,3 +17,19 @@ type ErrorResourceDeletingInProgress struct {
 func (e *ErrorResourceDeletingInProgress) Error() string {
 	return e.Message
 }
+
+type KubernetesSecretDoesNotExist struct {
+	Message string
+}
+
+func (e *KubernetesSecretDoesNotExist) Error() string {
+	return e.Message
+}
+
+type KubernetesSecretGettingDeleted struct {
+	Message string
+}
+
+func (e *KubernetesSecretGettingDeleted) Error() string {
+	return e.Message
+}
