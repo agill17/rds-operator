@@ -58,8 +58,12 @@ func (r *ReconcileDBCluster) setCRDeleteSpecSnapName(cr *kubev1alpha1.DBCluster,
 
 func (r *ReconcileDBCluster) setSvcName(cr *kubev1alpha1.DBCluster) error {
 	if cr.Spec.ServiceName == "" {
-		cr.Spec.ServiceName = fmt.Sprintf("%v-%v-rds-cluster", cr.Name, cr.Namespace)
+		cr.Spec.ServiceName = getSvcName(cr)
 		return lib.UpdateCr(r.client, cr)
 	}
 	return nil
+}
+
+func getSvcName(cr *kubev1alpha1.DBCluster) string {
+	return fmt.Sprintf("%v-service", cr.Name)
 }

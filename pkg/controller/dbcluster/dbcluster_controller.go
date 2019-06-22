@@ -133,6 +133,8 @@ func (r *ReconcileDBCluster) Reconcile(request reconcile.Request) (reconcile.Res
 		return reconcile.Result{}, err
 	}
 
+	// TODO; Add initDB job before service object is created
+
 	if err := r.createExternalSvc(cr); err != nil && !errors.IsForbidden(err) {
 		return reconcile.Result{}, err
 	}
