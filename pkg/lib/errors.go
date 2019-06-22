@@ -18,18 +18,26 @@ func (e *ErrorResourceDeletingInProgress) Error() string {
 	return e.Message
 }
 
-type KubernetesSecretDoesNotExist struct {
+type ErrorKubernetesSecretDoesNotExist struct {
 	Message string
 }
 
-func (e *KubernetesSecretDoesNotExist) Error() string {
+func (e *ErrorKubernetesSecretDoesNotExist) Error() string {
 	return e.Message
 }
 
-type KubernetesSecretGettingDeleted struct {
+type ErrorKubernetesSecretGettingDeleted struct {
 	Message string
 }
 
-func (e *KubernetesSecretGettingDeleted) Error() string {
+func (e *ErrorKubernetesSecretGettingDeleted) Error() string {
+	return e.Message
+}
+
+type ErrorKubernetesSecretDoesNotHaveKeyError struct {
+	Message string
+}
+
+func (e *ErrorKubernetesSecretDoesNotHaveKeyError) Error() string {
 	return e.Message
 }

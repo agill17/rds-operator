@@ -127,7 +127,7 @@ func (r *ReconcileDBCluster) Reconcile(request reconcile.Request) (reconcile.Res
 			logrus.Errorf("Namespace: %v | CR: %v | Msg: K8S objects are in deleting phase. Stopping reconcile..", cr.Namespace, cr.Name)
 			return reconcile.Result{Requeue: false}, nil
 		case *lib.KubernetesSecretDoesNotExist:
-			logrus.Errorf("Namespace: %v | CR: %v | Msg: K8S secret does not exist, checking back in 60 secs", cr.Namespace, cr.Name)
+			logrus.Errorf("Namespace: %v | CR: %v | Msg: %v", cr.Namespace, cr.Name, err)
 			return reconcile.Result{Requeue: true, RequeueAfter: time.Second * 60}, nil
 		}
 		return reconcile.Result{}, err

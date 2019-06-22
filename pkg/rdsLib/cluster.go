@@ -115,19 +115,20 @@ func (dh *cluster) addCredsToClusterInput() error {
 	exists, secret := lib.SecretExists(ns, secretName, dh.k8sClient)
 	// incase it does not exist
 	if !exists {
-		return &lib.KubernetesSecretDoesNotExist{Message: "K8S secret does not exist in namespace: " + ns}
+		return &lib.ErrorKubernetesSecretDoesNotExist{Message: "K8S secret does not exist: " + secretName}
 	}
 
 	//  or is getting deleted
 	if secret.DeletionTimestamp != nil {
-		return &lib.KubernetesSecretGettingDeleted{
-			Message: "K8S secret is getting deleted: " + ns,
+		return &lib.ErrorKubernetesSecretGettingDeleted{
+			Message: "K8S secret is getting deleted: " + secretName,
 		}
 	}
 
 	if dh.createInput.MasterUsername == nil && dh.createInput.MasterUserPassword == nil {
 		username := string(secret.Data[userKey])
 		password := string(secret.Data[passKey])
+
 		dh.createInput.MasterUsername = &username
 		dh.createInput.MasterUserPassword = &password
 		logrus.Infof("addCredsToClusterInput got invoked")
