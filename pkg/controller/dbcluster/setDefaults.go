@@ -63,7 +63,3 @@ func (r *ReconcileDBCluster) setSvcName(cr *kubev1alpha1.DBCluster) error {
 	}
 	return nil
 }
-
-func getSvcName(cr *kubev1alpha1.DBCluster) string {
-	return fmt.Sprintf("%v-service", cr.Name)
-}

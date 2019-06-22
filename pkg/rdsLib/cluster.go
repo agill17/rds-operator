@@ -40,12 +40,12 @@ func NewCluster(rdsClient *rds.RDS, createInput *rds.CreateDBClusterInput,
 
 // Create Cluster
 func (dh *cluster) Create() error {
-
-	if err := dh.addCredsToClusterInput(); err != nil {
-		return err
-	}
-
 	if exists := dh.clusterExists(); !exists {
+
+		if err := dh.addCredsToClusterInput(); err != nil {
+			return err
+		}
+
 		if _, err := dh.rdsClient.CreateDBCluster(dh.createInput); err != nil {
 			logrus.Errorf("Failed to create new DB Cluster, %v", err)
 			return err

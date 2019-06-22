@@ -1,19 +1,12 @@
 package dbcluster
 
 import (
-	"context"
 	"errors"
 
 	"github.com/agill17/rds-operator/pkg/rdsLib"
-	"k8s.io/apimachinery/pkg/runtime"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	kubev1alpha1 "github.com/agill17/rds-operator/pkg/apis/agill/v1alpha1"
 )
-
-func getClusterSecretName(crName string) string {
-	return crName + "-secret"
-}
 
 func validateRequiredInput(cr *kubev1alpha1.DBCluster) error {
 	if cr.Spec.CreateClusterSpec == nil && cr.Spec.CreateClusterFromSnapshot == nil {
@@ -57,19 +50,6 @@ func getDBClusterID(cr *kubev1alpha1.DBCluster, actionType rdsLib.RDSAction) str
 		}
 	}
 	return ""
-}
-
-func (r *ReconcileDBCluster) createExternalSvc(cr *kubev1alpha1.DBCluster) error {
-	svc := getClusterSvc(cr)
-	_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, svc, func(runtime.Object) error {
-		controllerutil.SetControllerReference(cr, svc, r.scheme)
-		return nil
-	})
-
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 // when useCredentialsFrom is true, no need to deploy a new secret

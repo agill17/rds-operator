@@ -22,6 +22,10 @@ const (
 	defaultPassKey  = "DB_PASS"
 )
 
+func getClusterSecretName(crName string) string {
+	return crName + "-secret"
+}
+
 /*
 	- Create Secret
 		- when useCredentialsFrom is not defined
