@@ -38,7 +38,7 @@ func (r *ReconcileDBCluster) reconcileSecret(cr *kubev1alpha1.DBCluster, rdsActi
 	var err error
 	createSecret, secretName, userKey, passKey := shouldCreateSecret(cr)
 	if createSecret {
-		_, err = r.createSecretIfNeeded(cr, rdsAction)
+		_, err = r.createUpdateSecret(cr, rdsAction)
 		if err != nil {
 			return err
 		}
@@ -47,7 +47,7 @@ func (r *ReconcileDBCluster) reconcileSecret(cr *kubev1alpha1.DBCluster, rdsActi
 	return setSecretStatusInCR(cr, r.client, secretName, userKey, passKey)
 }
 
-func (r *ReconcileDBCluster) createSecretIfNeeded(cr *kubev1alpha1.DBCluster, rdsAction rdsLib.RDSAction) (*v1.Secret, error) {
+func (r *ReconcileDBCluster) createUpdateSecret(cr *kubev1alpha1.DBCluster, rdsAction rdsLib.RDSAction) (*v1.Secret, error) {
 
 	secretObj := getSecretObj(cr, rdsAction)
 	_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, secretObj, func(runtime.Object) error {

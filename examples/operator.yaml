@@ -240,7 +240,7 @@ spec:
         - name: rds-operator
           image: agill17/rds-operator:0.3.3
           ports:
-          - containerPort: 60000
+          - containerPort: 8383
             name: metrics
           command:
           - rds-operator
