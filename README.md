@@ -39,36 +39,35 @@
 
 ### What really happens **WHEN** cr's are created for DBCluster 
 ---
-- DBCluster CR; ( credentials from secrets or directly are passed in here but are optional )
-  1. Validates required input
-  2. Attempts to create a new secret 
-      
-      - Secret __does not get created__
-          -  **WHEN** spec.credentialsFrom __is defined__
-          grab usernameKey, passwordKey and secretName and store into cr.status ( just the keys )
-      - Secret __gets created__ 
-        - **WHEN** spec.credentialsFrom __is NOT defined__ and spec is of type createClusterSpec ( not createClusterFromSnapshot )
-          - If spec.createClusterSpec.MasterUsername && cr.spec.createClusterSpec.MasterUserPassword __is defined__, secret gets created, finally the secretName, userKey and passKey gets stored in CR status ( just the keys )
-            ```
-            secretName: cr.Name-secret
-            data:
-              DB_USER: spec.createClusterSpec.MasterUsername
-              DB_PASS: cr.spec.createClusterSpec.MasterUserPassword
-            ```
-          - If spec.createClusterSpec.MasterUsername && cr.spec.createClusterSpec.MasterUserPassword __is NOT defined__, secret gets created, finally the secretName, userKey and passKey gets stored in CR status ( just the keys ) 
-            ```
-            secretName: cr.Name-secret
-            data:
-              DB_USER: admin
-              DB_PASS: password
-            ```
+1. Validates required input
+2. Attempts to create a new secret 
+    
+    - Secret __does not get created__
+        -  **WHEN** spec.credentialsFrom __is defined__
+        grab usernameKey, passwordKey and secretName and store into cr.status ( just the keys )
+    - Secret __gets created__ 
+      - **WHEN** spec.credentialsFrom __is NOT defined__ and spec is of type createClusterSpec ( not createClusterFromSnapshot )
+        - If spec.createClusterSpec.MasterUsername && cr.spec.createClusterSpec.MasterUserPassword __is defined__, secret gets created, finally the secretName, userKey and passKey gets stored in CR status ( just the keys )
+          ```
+          secretName: cr.Name-secret
+          data:
+            DB_USER: spec.createClusterSpec.MasterUsername
+            DB_PASS: cr.spec.createClusterSpec.MasterUserPassword
+          ```
+        - If spec.createClusterSpec.MasterUsername && cr.spec.createClusterSpec.MasterUserPassword __is NOT defined__, secret gets created, finally the secretName, userKey and passKey gets stored in CR status ( just the keys ) 
+          ```
+          secretName: cr.Name-secret
+          data:
+            DB_USER: admin
+            DB_PASS: password
+          ```
 
-  3. Updates fields in CRs
-  4. Checks if rds is already created ( using status fields of CR )
-  5. If not, checks for existence and creates the rds cluster object in AWS
-  6. Waits until cluster is available
-  7. Once available, update CR status ( created: true )
-  9. Create a external svc and point to cluster endpoint
+3. Updates fields in CRs
+4. Checks if rds is already created ( using status fields of CR )
+5. If not, checks for existence and creates the rds cluster object in AWS
+6. Waits until cluster is available
+7. Once available, update CR status ( created: true )
+9. Create a external svc and point to cluster endpoint
 
 - DBInstance CR; 
   1. Validates required input
