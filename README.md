@@ -38,6 +38,7 @@
   - DBInstance: `spec.createInstanceFromSnapshot` :white_check_mark:
 
 ### What really happens **WHEN** cr's are created for DBCluster 
+---
 - DBCluster CR; ( credentials from secrets or directly are passed in here but are optional )
   1. Validates required input
   2. Attempts to create a new secret 
