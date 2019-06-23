@@ -28,5 +28,5 @@ spec:
     PubliclyAccessible: true
   deleteInstanceSpec:
     DeleteAutomatedBackups: false
-    SkipFinalSnapshot: false 
+    SkipFinalSnapshot: true 
 

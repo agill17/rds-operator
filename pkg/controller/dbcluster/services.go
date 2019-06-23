@@ -2,6 +2,7 @@ package dbcluster
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	kubev1alpha1 "github.com/agill17/rds-operator/pkg/apis/agill/v1alpha1"
@@ -15,7 +16,20 @@ func getSvcName(cr *kubev1alpha1.DBCluster) string {
 	return fmt.Sprintf("%v-service", cr.Name)
 }
 
+func ensureClusterEndPointInStatus(cr *kubev1alpha1.DBCluster) error {
+	if cr.Status.DescriberClusterOutput == nil {
+		return errors.New("ClusterEndpointDoesNotExistInStatus")
+	}
+	return nil
+}
+
 func (r *ReconcileDBCluster) createExternalSvc(cr *kubev1alpha1.DBCluster) error {
+
+	// this is to avoid a nil pointer dereference error, in case cluster endpoint is not posted on the Cr status.
+	if err := ensureClusterEndPointInStatus(cr); err != nil {
+		return err
+	}
+
 	svc := getClusterSvc(cr)
 	_, err := controllerutil.CreateOrUpdate(context.TODO(), r.client, svc, func(runtime.Object) error {
 		controllerutil.SetControllerReference(cr, svc, r.scheme)

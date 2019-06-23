@@ -3,8 +3,6 @@ package dbinstance
 import (
 	"context"
 
-	batchv1 "k8s.io/api/batch/v1"
-
 	kubev1alpha1 "github.com/agill17/rds-operator/pkg/apis/agill/v1alpha1"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
@@ -67,59 +65,59 @@ func (r *ReconcileDBInstance) getSecretObj(cr *kubev1alpha1.DBInstance, masterUs
 
 }
 
-func (r *ReconcileDBInstance) getCreateJobInput(cr *kubev1alpha1.DBInstance, jobCmd []string) *batchv1.Job {
-	input := &batchv1.Job{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "init-rds",
-			Namespace: cr.Namespace,
-			Labels:    cr.GetLabels(),
-		},
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Job",
-			APIVersion: "batch/v1",
-		},
-		Spec: batchv1.JobSpec{
-			Template: corev1.PodTemplateSpec{
-				Spec: corev1.PodSpec{
-					RestartPolicy: "Never",
-					Containers: []corev1.Container{{
-						Name:    "init-rds-container",
-						Image:   cr.Spec.InitDB.Image,
-						Command: jobCmd,
-						Env: []corev1.EnvVar{
-							{
-								Name: "DATABASE_USERNAME",
-								ValueFrom: &corev1.EnvVarSource{
-									SecretKeyRef: &corev1.SecretKeySelector{
-										LocalObjectReference: corev1.LocalObjectReference{
-											Name: getSecretName(cr),
-										},
-										Key: "",
-									},
-								},
-							},
-							{
-								Name: "DATABASE_PASSWORD",
-								ValueFrom: &corev1.EnvVarSource{
-									SecretKeyRef: &corev1.SecretKeySelector{
-										LocalObjectReference: corev1.LocalObjectReference{
-											Name: getSecretName(cr),
-										},
-										Key: "",
-									},
-								},
-							}},
-					}},
-				},
-			},
-		},
-	}
-	// setup ownerReference
-	controllerutil.SetControllerReference(cr, input, r.scheme)
+// func (r *ReconcileDBInstance) getCreateJobInput(cr *kubev1alpha1.DBInstance, jobCmd []string) *batchv1.Job {
+// 	input := &batchv1.Job{
+// 		ObjectMeta: metav1.ObjectMeta{
+// 			Name:      "init-rds",
+// 			Namespace: cr.Namespace,
+// 			Labels:    cr.GetLabels(),
+// 		},
+// 		TypeMeta: metav1.TypeMeta{
+// 			Kind:       "Job",
+// 			APIVersion: "batch/v1",
+// 		},
+// 		Spec: batchv1.JobSpec{
+// 			Template: corev1.PodTemplateSpec{
+// 				Spec: corev1.PodSpec{
+// 					RestartPolicy: "Never",
+// 					Containers: []corev1.Container{{
+// 						Name:    "init-rds-container",
+// 						Image:   cr.Spec.InitDB.Image,
+// 						Command: jobCmd,
+// 						Env: []corev1.EnvVar{
+// 							{
+// 								Name: "DATABASE_USERNAME",
+// 								ValueFrom: &corev1.EnvVarSource{
+// 									SecretKeyRef: &corev1.SecretKeySelector{
+// 										LocalObjectReference: corev1.LocalObjectReference{
+// 											Name: getSecretName(cr),
+// 										},
+// 										Key: "",
+// 									},
+// 								},
+// 							},
+// 							{
+// 								Name: "DATABASE_PASSWORD",
+// 								ValueFrom: &corev1.EnvVarSource{
+// 									SecretKeyRef: &corev1.SecretKeySelector{
+// 										LocalObjectReference: corev1.LocalObjectReference{
+// 											Name: getSecretName(cr),
+// 										},
+// 										Key: "",
+// 									},
+// 								},
+// 							}},
+// 					}},
+// 				},
+// 			},
+// 		},
+// 	}
+// 	// setup ownerReference
+// 	controllerutil.SetControllerReference(cr, input, r.scheme)
 
-	return input
+// 	return input
 
-}
+// }
 
 func (r *ReconcileDBInstance) createExternalNameSvc(cr *kubev1alpha1.DBInstance) error {
 

@@ -42,6 +42,8 @@ spec:
           type: object
           required: ['deleteClusterSpec']
           properties:
+            credentialsFrom:
+              type: object
             createClusterSpec:
               type: object
             deleteClusterSpec:
@@ -238,7 +240,7 @@ spec:
       serviceAccountName: rds-operator
       containers:
         - name: rds-operator
-          image: agill17/rds-operator:0.3.3
+          image: agill17/rds-operator:0.3.4
           ports:
           - containerPort: 8383
             name: metrics

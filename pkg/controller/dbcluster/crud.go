@@ -8,11 +8,17 @@ import (
 	kubev1alpha1 "github.com/agill17/rds-operator/pkg/apis/agill/v1alpha1"
 )
 
-// responsible for creating, deleting and restoring db cluster based on actionType
-func (r *ReconcileDBCluster) crud(cr *kubev1alpha1.DBCluster,
-	clusterObj rdsLib.RDS, actionType rdsLib.RDSAction) error {
+func (r *ReconcileDBCluster) crud(cr *kubev1alpha1.DBCluster, actionType rdsLib.RDSAction) error {
 	clusterID := getDBClusterID(cr, actionType)
 	statusCreated := cr.Status.Created
+
+	// returns cluster struct which is also part of rds interface
+	// so we can call all funcs that are part of the interface as long as cluster satifies the interface
+	// cluster obj implements and satifies RDS interface by implementing all methods of that interface
+	clusterObj := rdsLib.NewCluster(r.rdsClient,
+		cr.Spec.CreateClusterSpec,
+		cr.Spec.DeleteSpec,
+		cr.Spec.CreateClusterFromSnapshot, cr, r.client, clusterID)
 
 	switch actionType {
 
@@ -48,7 +54,7 @@ func (r *ReconcileDBCluster) crud(cr *kubev1alpha1.DBCluster,
 
 	if !statusCreated {
 		// return err if not ready in AWS yet
-		if err := r.handlePhases(cr, clusterID); err != nil {
+		if err := rdsLib.SyncAndReconcileIfNotReady(clusterObj); err != nil {
 			return err
 		}
 		cr.Status.Created = true

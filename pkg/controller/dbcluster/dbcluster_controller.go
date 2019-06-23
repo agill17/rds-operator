@@ -2,9 +2,7 @@ package dbcluster
 
 import (
 	"context"
-	"time"
 
-	"github.com/agill17/rds-operator/pkg/rdsLib"
 	"github.com/sirupsen/logrus"
 
 	"github.com/aws/aws-sdk-go/service/rds"
@@ -110,25 +108,14 @@ func (r *ReconcileDBCluster) Reconcile(request reconcile.Request) (reconcile.Res
 		return reconcile.Result{}, err
 	}
 
-	// returns cluster struct which is also part of rds interface
-	// so we can call all funcs that are part of the interface as long as cluster satifies the interface
-	// cluster obj implements and satifies RDS interface by implementing all methods of that interface
-	clusterObj := rdsLib.NewCluster(r.rdsClient,
-		cr.Spec.CreateClusterSpec,
-		cr.Spec.DeleteSpec,
-		cr.Spec.CreateClusterFromSnapshot, cr, r.client)
-
-	if err := r.crud(cr, clusterObj, actionType); err != nil {
+	if err := r.crud(cr, actionType); err != nil {
 		switch err.(type) {
-		case *lib.ErrorResourceCreatingInProgress:
-			logrus.Errorf("Namespace: %v | CR: %v | Msg: Cluster still in creating phase. Reconciling to check again after 60 seconds", cr.Namespace, cr.Name)
-			return reconcile.Result{Requeue: true, RequeueAfter: time.Second * 60}, nil
+		case *lib.ErrorResourceCreatingInProgress, *lib.ErrorKubernetesSecretDoesNotExist:
+			logrus.Warnf("Namespace: %v | CR: %v | Msg: %v", cr.Namespace, cr.Name, err)
+			return reconcile.Result{Requeue: true}, nil
 		case *lib.ErrorKubernetesSecretGettingDeleted:
-			logrus.Errorf("Namespace: %v | CR: %v | Msg: K8S objects are in deleting phase. Stopping reconcile..", cr.Namespace, cr.Name)
+			logrus.Warnf("Namespace: %v | CR: %v | Msg: K8S objects are in deleting phase. Stopping reconcile..", cr.Namespace, cr.Name)
 			return reconcile.Result{Requeue: false}, nil
-		case *lib.ErrorKubernetesSecretDoesNotExist:
-			logrus.Errorf("Namespace: %v | CR: %v | Msg: %v", cr.Namespace, cr.Name, err)
-			return reconcile.Result{Requeue: true, RequeueAfter: time.Second * 60}, nil
 		}
 		return reconcile.Result{}, err
 	}

@@ -13,6 +13,12 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const (
+	dbClusterEndpointEnvVar = "DB_CLUSTER_ENDPOINT"
+	dbClusterUsername       = "DB_CLUSTER_USERNAME"
+	dbClusterPassword       = "DB_CLUSTER_PASSWORD"
+)
+
 func (r *ReconcileDBCluster) setUpDefaultsIfNeeded(cr *kubev1alpha1.DBCluster, rdsAction rdsLib.RDSAction) error {
 	if err := r.setCRDeleteClusterID(cr, rdsAction); err != nil {
 		return err

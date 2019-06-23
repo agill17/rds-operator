@@ -5,7 +5,6 @@ import (
 
 	kubev1alpha1 "github.com/agill17/rds-operator/pkg/apis/agill/v1alpha1"
 	"github.com/agill17/rds-operator/pkg/lib"
-	"github.com/agill17/rds-operator/pkg/rdsLib"
 	"github.com/aws/aws-sdk-go/service/rds"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -101,19 +100,11 @@ func (r *ReconcileDBInstance) Reconcile(request reconcile.Request) (reconcile.Re
 		}
 	}
 
-	// get new instanceObj
-	insObj := rdsLib.NewInstance(
-		r.rdsClient,
-		cr.Spec.CreateInstanceSpec,
-		cr.Spec.DeleteInstanceSpec,
-		cr.Spec.RestoreInstanceFromSnap,
-	)
-
-	err = r.crud(cr, insObj, actionType)
+	err = r.crud(cr, actionType)
 	if err != nil {
 		switch err.(type) {
 		case *lib.ErrorResourceCreatingInProgress:
-			logrus.Warnf("DBInstance not up yet, Reconciling to check again")
+			logrus.Warnf("Namespace: %v | CR: %v | Msg: %v", cr.Namespace, cr.Name, err)
 			return reconcile.Result{Requeue: true}, nil
 		default:
 			logrus.Errorf("Namespace: %v | DB Instance ID: %v | Msg: Something went wrong when creating db instance: %v", cr.Namespace, *cr.Spec.CreateInstanceSpec.DBInstanceIdentifier, err)

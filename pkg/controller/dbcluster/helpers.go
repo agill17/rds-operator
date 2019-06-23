@@ -37,17 +37,10 @@ func getActionType(cr *kubev1alpha1.DBCluster) rdsLib.RDSAction {
 }
 
 func getDBClusterID(cr *kubev1alpha1.DBCluster, actionType rdsLib.RDSAction) string {
-	switch actionType {
-	case rdsLib.CREATE:
+	if cr.Spec.CreateClusterSpec != nil {
 		return *cr.Spec.CreateClusterSpec.DBClusterIdentifier
-	case rdsLib.RESTORE:
+	} else if cr.Spec.CreateClusterFromSnapshot != nil {
 		return *cr.Spec.CreateClusterFromSnapshot.DBClusterIdentifier
-	case rdsLib.DELETE:
-		if cr.Spec.CreateClusterFromSnapshot != nil {
-			return *cr.Spec.CreateClusterFromSnapshot.DBClusterIdentifier
-		} else if cr.Spec.CreateClusterSpec != nil {
-			return *cr.Spec.CreateClusterSpec.DBClusterIdentifier
-		}
 	}
 	return ""
 }

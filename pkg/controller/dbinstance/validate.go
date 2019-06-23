@@ -17,10 +17,8 @@ func validateSpecBasedOnType(cr *kubev1alpha1.DBInstance, actionType rdsLib.RDSA
 		return validateCreateInstanceSpec(cr)
 	case rdsLib.RESTORE:
 		return validateCreateFromSnapSpec(cr)
-	case rdsLib.DELETE:
-		return validateDeleteInstanceSpec(cr)
 	}
-	return nil
+	return validateDeleteInstanceSpec(cr)
 }
 
 func validateCreateInstanceSpec(cr *kubev1alpha1.DBInstance) error {

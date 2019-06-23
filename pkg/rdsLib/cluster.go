@@ -21,12 +21,13 @@ type cluster struct {
 	deleteInput          *rds.DeleteDBClusterInput
 	restoreFromSnapInput *rds.RestoreDBClusterFromSnapshotInput
 	runtimeObj           *kubev1alpha1.DBCluster
+	clusterID            string
 }
 
 func NewCluster(rdsClient *rds.RDS, createInput *rds.CreateDBClusterInput,
 	deleteInput *rds.DeleteDBClusterInput,
 	restoreFromSnapInput *rds.RestoreDBClusterFromSnapshotInput,
-	cr *kubev1alpha1.DBCluster, client client.Client) RDS {
+	cr *kubev1alpha1.DBCluster, client client.Client, clusterID string) RDS {
 
 	return &cluster{
 		rdsClient:            rdsClient,
@@ -35,6 +36,7 @@ func NewCluster(rdsClient *rds.RDS, createInput *rds.CreateDBClusterInput,
 		deleteInput:          deleteInput,
 		k8sClient:            client,
 		runtimeObj:           cr,
+		clusterID:            clusterID,
 	}
 }
 
@@ -88,17 +90,11 @@ func (dh *cluster) Restore() error {
 
 // return bool ( exist / not exist ) and a remote status of the resource
 func (dh *cluster) clusterExists() bool {
-	var clID string
-	if dh.createInput != nil {
-		clID = *dh.createInput.DBClusterIdentifier
-	} else if dh.restoreFromSnapInput != nil {
-		clID = *dh.restoreFromSnapInput.DBClusterIdentifier
-	}
 
 	exists, _ := lib.DbClusterExists(
 		&lib.RDSGenerics{
 			RDSClient: dh.rdsClient,
-			ClusterID: clID,
+			ClusterID: dh.clusterID,
 		},
 	)
 
@@ -143,4 +139,25 @@ func (dh *cluster) setTimestampInSnapshotName() {
 		snashotName := fmt.Sprintf("%v-%v", dh.deleteInput.DBClusterIdentifier, strings.Replace(currentTime, ":", "-", -1))
 		dh.deleteInput.FinalDBSnapshotIdentifier = &snashotName
 	}
+}
+
+func (dh *cluster) GetAWSStatus() (string, error) {
+
+	exists, out := lib.DbClusterExists(&lib.RDSGenerics{RDSClient: dh.rdsClient, ClusterID: dh.clusterID})
+	currentLocalPhase := dh.runtimeObj.Status.CurrentPhase
+
+	if exists {
+		logrus.Infof("DBCluster CR: %v | Namespace: %v | Current phase in AWS: %v", dh.runtimeObj.Name, dh.runtimeObj.Namespace, *out.DBClusters[0].Status)
+		logrus.Infof("DBCluster CR: %v | Namespace: %v | Current phase in CR: %v", dh.runtimeObj.Name, dh.runtimeObj.Namespace, currentLocalPhase)
+
+		if currentLocalPhase != strings.ToLower(*out.DBClusters[0].Status) {
+			logrus.Warnf("Updating current phase in CR for namespace: %v", dh.runtimeObj.Namespace)
+			dh.runtimeObj.Status.CurrentPhase = strings.ToLower(*out.DBClusters[0].Status)
+			if err := lib.UpdateCrStatus(dh.k8sClient, dh.runtimeObj); err != nil {
+				return "", err
+			}
+		}
+	}
+	return dh.runtimeObj.Status.CurrentPhase, nil
+
 }

@@ -3,7 +3,8 @@ package v1alpha1
 import (
 	"github.com/aws/aws-sdk-go/service/rds"
 	"github.com/jinzhu/copier"
-	v1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -12,6 +13,7 @@ type DBClusterStatus struct {
 	SecretName               string                        `json:"secretName"`
 	UsernameKey              string                        `json:"usernameKey"`
 	PasswordKey              string                        `json:"passwordKey"`
+	PrimaryInstanceID        string                        `json:"primaryInstanceID"`
 	DescriberClusterOutput   *rds.DescribeDBClustersOutput `json:"describeClusterOutput"`
 	RestoredFromSnapshotName string                        `json:"restoredFromSnapshotName"`
 	CurrentPhase             string                        `json:"currentPhase"`
@@ -24,12 +26,17 @@ type DBClusterSpec struct {
 	CreateClusterSpec         *rds.CreateDBClusterInput              `json:"createClusterSpec,omitempty"`
 	CreateClusterFromSnapshot *rds.RestoreDBClusterFromSnapshotInput `json:"createClusterFromSnapshot,omitempty"`
 	DeleteSpec                *rds.DeleteDBClusterInput              `json:"deleteClusterSpec,required"`
+	InitClusterDB             InitClusterDB                          `json:"initClusterDB,omitempty"`
+}
+
+type InitClusterDB struct {
+	Spec *v1.JobSpec `json:"jobSpec,omitempty"`
 }
 
 type CredentialsFrom struct {
-	UsernameKey string                   `json:"usernameKey"`
-	PasswordKey string                   `json:"passwordKey"`
-	SecretName  *v1.LocalObjectReference `json:"secret"`
+	UsernameKey string                       `json:"usernameKey"`
+	PasswordKey string                       `json:"passwordKey"`
+	SecretName  *corev1.LocalObjectReference `json:"secret"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

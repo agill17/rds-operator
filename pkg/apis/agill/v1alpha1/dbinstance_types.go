@@ -14,7 +14,6 @@ type DBInstanceSpec struct {
 	Region                  string                                    `json:"region"`
 	InstanceSecretName      string                                    `json:"instanceSecretName,omitempty"`
 	ServiceName             string                                    `json:"serviceName,omitempty"`
-	InitDB                  InitDB                                    `json:"initDB,omitempty"`
 	CreateInstanceSpec      *rds.CreateDBInstanceInput                `json:"createInstanceSpec,omitempty"`
 	RestoreInstanceFromSnap *rds.RestoreDBInstanceFromDBSnapshotInput `json:"createInstanceFromSnapshot,omitempty"`
 	DeleteInstanceSpec      *rds.DeleteDBInstanceInput                `json:"deleteInstanceSpec,required"`
@@ -64,18 +63,6 @@ type DBInstance struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 	Spec              DBInstanceSpec   `json:"spec,required"`
 	Status            DBInstanceStatus `json:"status,omitempty"`
-}
-
-type InitDB struct {
-	Image             string            `json:"image"`
-	WaitTillCompleted bool              `json:"waitTillCompleted"`
-	Timeout           int               `json:"timeout"`
-	BackOffLimit      int               `json:"backOffLimit"`
-	ImagePullSecret   string            `json:"imagePullSecret,omitempty"`
-	Annotations       map[string]string `json:"annotations,omitempty"`
-	NodeSelector      map[string]string `json:"nodeSelector,omitempty"`
-	SQLFile           string            `json:"sqlFile"`
-	Command           []string          `json:"command"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
