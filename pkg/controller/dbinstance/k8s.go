@@ -2,16 +2,27 @@ package dbinstance
 
 import (
 	"context"
+	"errors"
+
+	// "errors"
 
 	kubev1alpha1 "github.com/agill17/rds-operator/pkg/apis/agill/v1alpha1"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
+func ensureInstanceEndpointExists(cr *kubev1alpha1.DBInstance) error {
+	if cr.Status.RDSInstanceStatus == nil || len(cr.Status.RDSInstanceStatus.DBInstances) == 0 || cr.Status.RDSInstanceStatus.DBInstances[0].Endpoint == nil {
+		return errors.New("DBInstanceStatusEndpointEmptyError")
+	}
+	return nil
+}
+
 func (r *ReconcileDBInstance) getSvcObj(cr *kubev1alpha1.DBInstance) *corev1.Service {
+
 	s := &corev1.Service{
 		TypeMeta: metav1.TypeMeta{Kind: "Service", APIVersion: "v1"},
 		ObjectMeta: metav1.ObjectMeta{
@@ -121,7 +132,12 @@ func (r *ReconcileDBInstance) getSecretObj(cr *kubev1alpha1.DBInstance, masterUs
 
 func (r *ReconcileDBInstance) createExternalNameSvc(cr *kubev1alpha1.DBInstance) error {
 
-	if err := r.client.Create(context.TODO(), r.getSvcObj(cr)); err != nil && !errors.IsAlreadyExists(err) && !errors.IsForbidden(err) {
+	// this is to avoid a nil pointer dereference error, in case cluster endpoint is not posted on the Cr status.
+	if err := ensureInstanceEndpointExists(cr); err != nil {
+		return err
+	}
+
+	if err := r.client.Create(context.TODO(), r.getSvcObj(cr)); err != nil && !apiErrors.IsAlreadyExists(err) && !apiErrors.IsForbidden(err) {
 		logrus.Errorf("Namespace: %v | Msg: ERROR while creating RDS Service: %v", cr.Namespace, err)
 		return err
 	}
@@ -131,7 +147,7 @@ func (r *ReconcileDBInstance) createExternalNameSvc(cr *kubev1alpha1.DBInstance)
 
 func (r *ReconcileDBInstance) createSecret(cr *kubev1alpha1.DBInstance) error {
 	secretObj := r.getSecretObj(cr, cr.Status.Username, cr.Status.Password, getSecretName(cr))
-	if err := r.client.Create(context.TODO(), secretObj); err != nil && !errors.IsAlreadyExists(err) && !errors.IsForbidden(err) {
+	if err := r.client.Create(context.TODO(), secretObj); err != nil && !apiErrors.IsAlreadyExists(err) && !apiErrors.IsForbidden(err) {
 		logrus.Errorf("Error while creating secret object: %v", err)
 		return err
 	}

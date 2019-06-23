@@ -1,13 +1,13 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: amrit
+  name: amrit-mysql
 ---
 apiVersion: agill.apps/v1alpha1
 kind: DBInstance
 metadata:
   name: mysql-instance
-  namespace: amrit
+  namespace: amrit-mysql
 spec:
   serviceName: mysql-endpoint
   createInstanceSpec:
@@ -22,7 +22,7 @@ spec:
     # MasterUserPassword: password -- optional ( generates a random string )
     AutoMinorVersionUpgrade: false
     CopyTagsToSnapshot: true
-    DBInstanceIdentifier: amrit-mysql
+    DBInstanceIdentifier: amrit-mysql-mysql
     BackupRetentionPeriod: 1
     MultiAZ: true
     PubliclyAccessible: true

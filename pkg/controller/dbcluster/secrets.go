@@ -16,8 +16,8 @@ import (
 )
 
 const (
-	defaultUsername = "admin"
-	defaultPassword = "password"
+	defaultUsername = "defaultUsername"
+	defaultPassword = "defaultPassword"
 	defaultUserKey  = "DB_USER"
 	defaultPassKey  = "DB_PASS"
 )
