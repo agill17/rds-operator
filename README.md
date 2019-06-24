@@ -9,6 +9,8 @@
 #### Option 2: Helm chart
 
 ---
+#### Example/Samples
+- Can be found under `examples/` dir
 #### DBCluster vs DBInstance
 - Use DBCluster and DBInstance (Both) **WHEN** creating anything with aurora ( so aurora-mysql or aurora-postgresql )
 - Why use DBCluster? Because of how AWS SDK works.
