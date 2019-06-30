@@ -36,7 +36,7 @@ func getActionType(cr *kubev1alpha1.DBCluster) rdsLib.RDSAction {
 	return rdsLib.UNKNOWN
 }
 
-func getDBClusterID(cr *kubev1alpha1.DBCluster, actionType rdsLib.RDSAction) string {
+func getDBClusterID(cr *kubev1alpha1.DBCluster) string {
 	if cr.Spec.CreateClusterSpec != nil {
 		return *cr.Spec.CreateClusterSpec.DBClusterIdentifier
 	} else if cr.Spec.CreateClusterFromSnapshot != nil {

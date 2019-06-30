@@ -17,8 +17,15 @@ import (
 	kubev1alpha1 "github.com/agill17/rds-operator/pkg/apis/agill/v1alpha1"
 )
 
+// used to set env keys in initDBJob
+const (
+	dbClusterEndpointEnvVar = "DB_CLUSTER_ENDPOINT"
+	dbClusterUsername       = "DB_CLUSTER_USERNAME"
+	dbClusterPassword       = "DB_CLUSTER_PASSWORD"
+)
+
 func reconcileInitDBJob(cr *kubev1alpha1.DBCluster, client client.Client, rdsClient *rds.RDS) error {
-	if err := setPrimaryInstanceID(cr, client); err != nil {
+	if err := setPrimaryInstanceID(cr, rdsClient, client); err != nil {
 		return err
 	}
 
@@ -34,17 +41,7 @@ func reconcileInitDBJob(cr *kubev1alpha1.DBCluster, client client.Client, rdsCli
 	return nil
 }
 
-func setPrimaryInstanceID(cr *kubev1alpha1.DBCluster, client client.Client) error {
-	clusterMembers := cr.Status.DescriberClusterOutput.DBClusters[0].DBClusterMembers
-	for _, memeber := range clusterMembers {
-		if *memeber.IsClusterWriter {
-			cr.Status.PrimaryInstanceID = *memeber.DBInstanceIdentifier
-			return lib.UpdateCrStatus(client, cr)
-		}
-	}
-	return nil
-}
-
+// get instanceID from status, if set, check instance status, if available return true
 func isPrimaryInstanceAvailable(cr *kubev1alpha1.DBCluster, rdsClient *rds.RDS) (bool, error) {
 
 	if cr.Status.PrimaryInstanceID == "" {
@@ -55,12 +52,10 @@ func isPrimaryInstanceAvailable(cr *kubev1alpha1.DBCluster, rdsClient *rds.RDS) 
 	if dbInstanceExists {
 		if *instanceOut.DBInstances[0].DBInstanceStatus == "available" {
 			return true, nil
-		} else {
-			return false, &lib.ErrorResourceCreatingInProgress{Message: "DBCluster does not have a dbInstance in available state yet"}
 		}
 	}
 
-	return false, nil
+	return false, &lib.ErrorResourceCreatingInProgress{Message: "DBCluster does not have a primary dbInstance in available state yet"}
 }
 
 // This should be run ONLY after cluster is in available state AND has 1 instance in available state
@@ -111,5 +106,33 @@ func (r *ReconcileDBCluster) populateEnvVarsInCr(cr *kubev1alpha1.DBCluster) err
 		return lib.UpdateCr(r.client, cr)
 	}
 
+	return nil
+}
+
+/*
+	if initDBJobDefined,
+	then we need to run that AFTER the primary DBInstance
+	is marked available. We cannot run initDBJob until then
+	So repeat the DescribeDBCluster func until we have 1
+	primary instance available and set it inside the DBCluster
+	CR so we dont have to do this check over and over again
+*/
+
+func setPrimaryInstanceID(cr *kubev1alpha1.DBCluster, rdsClient *rds.RDS, client client.Client) error {
+	clusterAvail := cr.Status.CurrentPhase == "available"
+	if cr.Status.PrimaryInstanceID == "" && clusterAvail {
+		// describe cluster to get instance members
+		_, out := lib.DbClusterExists(&lib.RDSGenerics{RDSClient: rdsClient, ClusterID: getDBClusterID(cr)})
+		if len(out.DBClusters[0].DBClusterMembers) == 0 {
+			return errors.New("NoDBInstancesAttahcedToCluster")
+		}
+		for _, eachMember := range out.DBClusters[0].DBClusterMembers {
+			if *eachMember.IsClusterWriter {
+				logrus.Infof("Namespace: %v | CR: %v | Found instance that is part of cluster to run initDBJob", cr.Namespace, cr.Name)
+				cr.Status.PrimaryInstanceID = *eachMember.DBInstanceIdentifier
+				return lib.UpdateCrStatus(client, cr)
+			}
+		}
+	}
 	return nil
 }
