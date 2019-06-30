@@ -9,6 +9,8 @@
 #### Option 2: Helm chart
 
 ---
+#### Example/Samples
+- Can be found under `examples/` dir
 #### DBCluster vs DBInstance
 - Use DBCluster and DBInstance (Both) **WHEN** creating anything with aurora ( so aurora-mysql or aurora-postgresql )
 - Why use DBCluster? Because of how AWS SDK works.
@@ -45,6 +47,7 @@
 
 
 ## TODO 
+- Centralize (create/delete/restore) into rdsLib and make use of existing interface funcs!
 - Add docs
 - Make Secret resource conditional for both DBCluster(:white_check_mark:) and DBInstance ( some folks might want to pass credentials like username and password from a k8s secret so there is no need to deploy another secret with the same information )
 - Add support for initDB Job in dbCluster so that a user can have their db imported from an existing image ( DBCluster & DBInstance )
