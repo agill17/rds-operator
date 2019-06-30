@@ -4,14 +4,12 @@ import (
 	"github.com/agill17/rds-operator/pkg/lib"
 	"github.com/agill17/rds-operator/pkg/rdsLib"
 	"github.com/davecgh/go-spew/spew"
-	"github.com/sirupsen/logrus"
 
 	kubev1alpha1 "github.com/agill17/rds-operator/pkg/apis/agill/v1alpha1"
 )
 
 func (r *ReconcileDBCluster) crud(cr *kubev1alpha1.DBCluster, actionType rdsLib.RDSAction) error {
 	clusterID := getDBClusterID(cr)
-	logrus.Infof("ClusterID ~~> %v", clusterID)
 	statusCreated := cr.Status.Created
 
 	// returns cluster struct which is also part of rds interface

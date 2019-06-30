@@ -35,7 +35,7 @@ func reconcileInitDBJob(cr *kubev1alpha1.DBCluster, client client.Client, rdsCli
 	}
 
 	if instanceAvail {
-		logrus.Infof("Applying initDBJob Spec..")
+		return nil
 	}
 
 	return nil
