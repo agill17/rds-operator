@@ -6,6 +6,9 @@ import (
 	"strings"
 	"time"
 
+	v1 "k8s.io/api/core/v1"
+
+	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	kubev1alpha1 "github.com/agill17/rds-operator/pkg/apis/agill/v1alpha1"
@@ -42,7 +45,9 @@ func NewCluster(rdsClient *rds.RDS, createInput *rds.CreateDBClusterInput,
 
 // Create Cluster
 func (dh *cluster) Create() error {
-	if exists := dh.clusterExists(); !exists {
+
+	exists, _ := lib.DbClusterExists(&lib.RDSGenerics{RDSClient: dh.rdsClient, ClusterID: dh.clusterID})
+	if !exists {
 
 		if err := dh.addCredsToClusterInput(); err != nil {
 			return err
@@ -60,7 +65,8 @@ func (dh *cluster) Create() error {
 // Delete Cluster
 func (dh *cluster) Delete() error {
 
-	if exists := dh.clusterExists(); exists {
+	exists, _ := lib.DbClusterExists(&lib.RDSGenerics{RDSClient: dh.rdsClient, ClusterID: dh.clusterID})
+	if !exists {
 		if _, err := dh.rdsClient.DeleteDBCluster(dh.deleteInput); err != nil {
 			logrus.Errorf("Failed to delete DB cluster: %v", err)
 			return err
@@ -72,7 +78,9 @@ func (dh *cluster) Delete() error {
 
 // Restore Cluster
 func (dh *cluster) Restore() error {
-	if exists := dh.clusterExists(); !exists {
+
+	exists, _ := lib.DbClusterExists(&lib.RDSGenerics{RDSClient: dh.rdsClient, ClusterID: dh.clusterID})
+	if !exists {
 
 		if dh.restoreFromSnapInput.DBClusterIdentifier == nil ||
 			dh.restoreFromSnapInput.SnapshotIdentifier == nil {
@@ -88,19 +96,6 @@ func (dh *cluster) Restore() error {
 	return nil
 }
 
-// return bool ( exist / not exist ) and a remote status of the resource
-func (dh *cluster) clusterExists() bool {
-
-	exists, _ := lib.DbClusterExists(
-		&lib.RDSGenerics{
-			RDSClient: dh.rdsClient,
-			ClusterID: dh.clusterID,
-		},
-	)
-
-	return exists
-}
-
 func (dh *cluster) addCredsToClusterInput() error {
 	// ALWAYS grab credentials from a secret
 	// a secret WILL exist whether its the user creates it or gets created by the controller
@@ -111,14 +106,12 @@ func (dh *cluster) addCredsToClusterInput() error {
 	exists, secret := lib.SecretExists(ns, secretName, dh.k8sClient)
 	// incase it does not exist
 	if !exists {
-		return &lib.ErrorKubernetesSecretDoesNotExist{Message: "K8S secret does not exist: " + secretName}
+		return apiErrors.NewNotFound(v1.Resource("secret"), secret.Name)
 	}
 
 	//  or is getting deleted
 	if secret.DeletionTimestamp != nil {
-		return &lib.ErrorKubernetesSecretGettingDeleted{
-			Message: "K8S secret is getting deleted: " + secretName,
-		}
+		return apiErrors.NewForbidden(v1.Resource("secret"), secretName, errors.New("K8sSecretGettingDeleted"))
 	}
 
 	if dh.createInput.MasterUsername == nil && dh.createInput.MasterUserPassword == nil {

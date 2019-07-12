@@ -8,7 +8,7 @@ import (
 	kubev1alpha1 "github.com/agill17/rds-operator/pkg/apis/agill/v1alpha1"
 )
 
-func (r *ReconcileDBCluster) crud(cr *kubev1alpha1.DBCluster, actionType rdsLib.RDSAction) error {
+func (r *ReconcileDBCluster) clusterCrud(cr *kubev1alpha1.DBCluster, actionType rdsLib.RDSAction) error {
 	clusterID := getDBClusterID(cr)
 	statusCreated := cr.Status.Created
 

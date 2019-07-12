@@ -1,7 +1,9 @@
 package dbcluster
 
 import (
+	"context"
 	"errors"
+	"fmt"
 	"reflect"
 
 	"github.com/sirupsen/logrus"
@@ -11,8 +13,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/agill17/rds-operator/pkg/lib"
+	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 
+	batchv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	kubev1alpha1 "github.com/agill17/rds-operator/pkg/apis/agill/v1alpha1"
 )
@@ -25,19 +30,35 @@ const (
 )
 
 func reconcileInitDBJob(cr *kubev1alpha1.DBCluster, client client.Client, rdsClient *rds.RDS) error {
-	if err := setPrimaryInstanceID(cr, rdsClient, client); err != nil {
-		return err
-	}
 
-	instanceAvail, err := isPrimaryInstanceAvailable(cr, rdsClient)
-	if err != nil {
-		return err
-	}
+	// if defined then proceed
+	if cr.Spec.InitClusterDB.Spec != nil {
 
-	if instanceAvail {
-		return nil
-	}
+		if err := setPrimaryInstanceID(cr, rdsClient, client); err != nil {
+			return err
+		}
 
+		instanceAvail, err := isPrimaryInstanceAvailable(cr, rdsClient)
+		if err != nil {
+			return err
+		}
+
+		if instanceAvail {
+			jobSpec := &batchv1.Job{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      fmt.Sprintf("%v-initdb", cr.Name),
+					Namespace: cr.Namespace,
+				},
+				Spec: *cr.Spec.InitClusterDB.Spec,
+			}
+
+			if err := client.Create(context.TODO(), jobSpec); err != nil && !apiErrors.IsAlreadyExists(err) {
+				logrus.Errorf("Error while creating initDB job in namespace: %v -- %v", cr.Namespace, err)
+				return err
+			}
+
+		}
+	}
 	return nil
 }
 

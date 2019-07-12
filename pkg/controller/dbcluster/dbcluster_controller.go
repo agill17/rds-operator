@@ -108,22 +108,36 @@ func (r *ReconcileDBCluster) Reconcile(request reconcile.Request) (reconcile.Res
 		return reconcile.Result{}, err
 	}
 
-	if err := r.crud(cr, actionType); err != nil {
-		switch err.(type) {
-		case *lib.ErrorResourceCreatingInProgress, *lib.ErrorKubernetesSecretDoesNotExist:
+	if err := r.clusterCrud(cr, actionType); err != nil {
+
+		// when k8s secret is not found, we throw the k8s isNotFoundError
+		// when k8s secret is getting deleted, we throw isForbidden error
+		// requeue
+
+		if errors.IsNotFound(err) || errors.IsForbidden(err) {
+			logrus.Errorf("Namespace: %v | CR: %v | %v", cr.Namespace, cr.Name, err)
+			return reconcile.Result{Requeue: true}, err
+
+			// when aws resource is still creating in progress, we throw ErrorResourceCreatingInProgress
+			// catch it and requeue
+		} else if err, ok := err.(*lib.ErrorResourceCreatingInProgress); ok {
 			logrus.Warnf("Namespace: %v | CR: %v | Msg: %v", cr.Namespace, cr.Name, err)
 			return reconcile.Result{Requeue: true}, nil
-		case *lib.ErrorKubernetesSecretGettingDeleted:
-			logrus.Warnf("Namespace: %v | CR: %v | Msg: K8S objects are in deleting phase. Stopping reconcile..", cr.Namespace, cr.Name)
-			return reconcile.Result{Requeue: false}, nil
+
+			// when error type is not recognized, log the error and requeue
+		} else {
+			logrus.Errorf("Namespace: %v | CR: %v | Msg: %v", cr.Namespace, cr.Name, err)
+			return reconcile.Result{}, err
 		}
-		return reconcile.Result{}, err
+
 	}
 
+	// reconcile k8s job
 	if err := reconcileInitDBJob(cr, r.client, r.rdsClient); err != nil {
 		return reconcile.Result{}, err
 	}
 
+	// reconcile k8s svc
 	if err := r.createExternalSvc(cr); err != nil && !errors.IsForbidden(err) {
 		return reconcile.Result{}, err
 	}

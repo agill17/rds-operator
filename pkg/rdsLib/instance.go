@@ -40,7 +40,18 @@ func NewInstance(rdsClient *rds.RDS,
 
 // Create Instance
 func (i *instance) Create() error {
-	if exists := i.instanceExists(); !exists {
+	exists, _ := lib.DBInstanceExists(&lib.RDSGenerics{RDSClient: i.rdsClient, InstanceID: i.instanceID})
+	if !exists {
+
+		// if instance is part of cluster, check cluster existence before
+		partOfCluster := i.createIn.DBClusterIdentifier != nil
+		if partOfCluster {
+			clusterExists, _ := lib.DbClusterExists(&lib.RDSGenerics{RDSClient: i.rdsClient, ClusterID: *i.createIn.DBClusterIdentifier})
+			if !clusterExists {
+				return &lib.ErrorResourceCreatingInProgress{Message: "ClusterForDBInstanceNotFoundError"}
+			}
+		}
+
 		if _, err := i.rdsClient.CreateDBInstance(i.createIn); err != nil {
 			logrus.Errorf("Failed to create new DB Instance: %v", err)
 			return err
@@ -51,8 +62,8 @@ func (i *instance) Create() error {
 
 // Delete Instance
 func (i *instance) Delete() error {
-
-	if exists := i.instanceExists(); exists {
+	exists, _ := lib.DBInstanceExists(&lib.RDSGenerics{RDSClient: i.rdsClient, InstanceID: i.instanceID})
+	if !exists {
 		if _, err := i.rdsClient.DeleteDBInstance(i.deleteIn); err != nil {
 			logrus.Errorf("Failed to delete DB Instance: %v", err)
 			return err
@@ -63,8 +74,8 @@ func (i *instance) Delete() error {
 
 // Restore Instance
 func (i *instance) Restore() error {
-
-	if exists := i.instanceExists(); !exists {
+	exists, _ := lib.DBInstanceExists(&lib.RDSGenerics{RDSClient: i.rdsClient, InstanceID: i.instanceID})
+	if !exists {
 		if _, err := i.rdsClient.RestoreDBInstanceFromDBSnapshot(i.restoreFromSnapIn); err != nil {
 			logrus.Errorf("Failed to restore DB cluster from snapshot :%v", err)
 			return err
@@ -73,6 +84,7 @@ func (i *instance) Restore() error {
 	return nil
 }
 
+// GetAWSStatus returns resource state in aws
 func (i *instance) GetAWSStatus() (string, error) {
 
 	exists, out := lib.DBInstanceExists(&lib.RDSGenerics{RDSClient: i.rdsClient, InstanceID: i.instanceID})
@@ -92,19 +104,6 @@ func (i *instance) GetAWSStatus() (string, error) {
 	}
 	return i.runtimeObj.Status.CurrentPhase, nil
 
-}
-
-func (i *instance) instanceExists() bool {
-	var insID string
-	if i.createIn != nil {
-		insID = *i.createIn.DBInstanceIdentifier
-	} else if i.restoreFromSnapIn != nil {
-		insID = *i.restoreFromSnapIn.DBInstanceIdentifier
-	}
-
-	exists, _ := lib.DBInstanceExists(&lib.RDSGenerics{RDSClient: i.rdsClient, InstanceID: insID})
-
-	return exists
 }
 
 func (i *instance) setTimestampInSnapshotName() {
