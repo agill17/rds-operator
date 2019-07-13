@@ -72,8 +72,7 @@ func (dh *cluster) Delete() error {
 			return err
 		}
 		logrus.Warnf("Successfully Deleted DB Cluster: %v", *dh.deleteInput.DBClusterIdentifier)
-		dh.runtimeObj.SetFinalizers([]string{})
-		return lib.UpdateCr(dh.k8sClient, dh.runtimeObj)
+		return lib.RemoveFinalizer(dh.runtimeObj, dh.k8sClient, lib.DBClusterFinalizer)
 	}
 	return nil
 }

@@ -68,8 +68,7 @@ func (i *instance) Delete() error {
 			logrus.Errorf("Failed to delete DB Instance: %v", err)
 			return err
 		}
-		i.runtimeObj.SetFinalizers([]string{})
-		return lib.UpdateCr(i.k8sClient, i.runtimeObj)
+		return lib.RemoveFinalizer(i.runtimeObj, i.k8sClient, lib.DBInstanceFinalizer)
 	}
 	return nil
 }

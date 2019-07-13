@@ -54,6 +54,22 @@ func SecretExists(namespace, secretName string, client client.Client) (bool, *v1
 	return true, secretFound
 }
 
+func RemoveFinalizer(runtimeObj runtime.Object, client client.Client, finalizer string) error {
+	accessor, err := meta.Accessor(runtimeObj)
+	if err != nil {
+		return err
+	}
+	currentFinalizers := accessor.GetFinalizers()
+	exists, i := finalizerExists(currentFinalizers, finalizer)
+	if exists {
+		currentFinalizers = append(currentFinalizers[:i], currentFinalizers[i+1:]...)
+		accessor.SetFinalizers(currentFinalizers)
+		return UpdateCr(client, runtimeObj)
+	}
+
+	return nil
+}
+
 func AddFinalizer(runtimeObj runtime.Object, client client.Client, finalizer string) error {
 	// get the runtime obj interface so I can add finalizers in metadata
 	// note: Accessor returns meta.Object which is an interface with funcs to muck around with
@@ -64,8 +80,8 @@ func AddFinalizer(runtimeObj runtime.Object, client client.Client, finalizer str
 	}
 
 	currentFinalizers := accessor.GetFinalizers()
-
-	if !finalizerExists(currentFinalizers, finalizer) {
+	exists, _ := finalizerExists(currentFinalizers, finalizer)
+	if !exists {
 		currentFinalizers = append(currentFinalizers, finalizer)
 		accessor.SetFinalizers(currentFinalizers)
 		return UpdateCr(client, runtimeObj)
@@ -75,11 +91,11 @@ func AddFinalizer(runtimeObj runtime.Object, client client.Client, finalizer str
 
 }
 
-func finalizerExists(currentList []string, lookupFinalizer string) bool {
-	for _, e := range currentList {
+func finalizerExists(currentList []string, lookupFinalizer string) (bool, int) {
+	for i, e := range currentList {
 		if e == lookupFinalizer {
-			return true
+			return true, i
 		}
 	}
-	return false
+	return false, -1
 }
