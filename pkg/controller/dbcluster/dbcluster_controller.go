@@ -3,6 +3,8 @@ package dbcluster
 import (
 	"context"
 
+	"github.com/agill17/rds-operator/pkg/rdsLib"
+
 	"github.com/sirupsen/logrus"
 
 	"github.com/aws/aws-sdk-go/service/rds"
@@ -105,7 +107,15 @@ func (r *ReconcileDBCluster) Reconcile(request reconcile.Request) (reconcile.Res
 		return reconcile.Result{}, err
 	}
 
-	if err := r.clusterCrud(cr, actionType); err != nil {
+	// returns cluster struct which is also part of rds interface
+	// so we can call all funcs that are part of the interface as long as cluster satifies the interface
+	// cluster obj implements and satifies RDS interface by implementing all methods of that interface
+	clusterObj := rdsLib.NewCluster(r.rdsClient,
+		cr.Spec.CreateClusterSpec,
+		cr.Spec.DeleteSpec,
+		cr.Spec.CreateClusterFromSnapshot, cr, r.client, getDBClusterID(cr))
+
+	if err := rdsLib.Crud(clusterObj, actionType, cr.Status.Created, r.client); err != nil {
 
 		// when k8s secret is not found, we throw the k8s isNotFoundError
 		// when k8s secret is getting deleted, we throw isForbidden error
@@ -121,12 +131,17 @@ func (r *ReconcileDBCluster) Reconcile(request reconcile.Request) (reconcile.Res
 			logrus.Warnf("Namespace: %v | CR: %v | Msg: %v", cr.Namespace, cr.Name, err)
 			return reconcile.Result{Requeue: true}, nil
 
-			// when error type is not recognized, log the error and requeue
+			// when error type is not recognized, log the error msg and requeue
 		} else {
 			logrus.Errorf("Namespace: %v | CR: %v | Msg: %v", cr.Namespace, cr.Name, err)
 			return reconcile.Result{}, err
 		}
 
+	}
+
+	// once past the main crud func, add status
+	if err := r.updateClusterStatusInCr(cr); err != nil {
+		return reconcile.Result{}, err
 	}
 
 	// reconcile k8s job

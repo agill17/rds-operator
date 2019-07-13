@@ -3,6 +3,8 @@ package dbinstance
 import (
 	"strings"
 
+	"github.com/davecgh/go-spew/spew"
+
 	"github.com/agill17/rds-operator/pkg/rdsLib"
 	"github.com/sirupsen/logrus"
 
@@ -87,4 +89,16 @@ func (r *ReconcileDBInstance) waitForClusterIfNeeded(cr *kubev1alpha1.DBInstance
 		return lib.UpdateCrStatus(r.client, cr)
 	}
 	return err
+}
+
+func (r *ReconcileDBInstance) updateInstanceStatusInCr(cr *kubev1alpha1.DBInstance) error {
+	if !cr.Status.Created {
+		cr.Status.Created = true
+		_, cr.Status.RDSInstanceStatus = lib.DBInstanceExists(
+			&lib.RDSGenerics{RDSClient: r.rdsClient,
+				ClusterID: getInstanceID(cr)})
+		spew.Dump(cr.Status)
+		return lib.UpdateCrStatus(r.client, cr)
+	}
+	return nil
 }

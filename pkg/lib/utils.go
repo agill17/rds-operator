@@ -12,7 +12,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/aws/aws-sdk-go/service/rds"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -23,25 +22,6 @@ func RandStringBytes(n int) string {
 		b[i] = LetterBytes[rand.Intn(len(LetterBytes))]
 	}
 	return string(b)
-}
-
-func WaitForExistence(waitType string, dbID string, ns string, rdsClient *rds.RDS) error {
-	var err error
-	dbInput := &rds.DescribeDBInstancesInput{DBInstanceIdentifier: &dbID}
-	logrus.Warningf("Namespace: %v | DB Identifier: %v | Msg: Waiting for DB instance to become %v", ns, dbID, waitType)
-	switch waitType {
-	case "available":
-		err = rdsClient.WaitUntilDBInstanceAvailableWithContext(context.Background(), dbInput)
-		break
-	case "notAvailable":
-		err = rdsClient.WaitUntilDBInstanceDeletedWithContext(context.Background(), dbInput)
-		break
-	}
-
-	if err != nil {
-		logrus.Errorf("Namespace: %v | DB Identifier: %v | Msg: ERROR while waiting for rds db instance to %v", ns, dbID, waitType)
-	}
-	return err
 }
 
 // UpdateCr is used to update CR spec ( not status ), things like adding/removing finalizers, spec updates

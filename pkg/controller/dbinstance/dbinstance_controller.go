@@ -3,6 +3,8 @@ package dbinstance
 import (
 	"context"
 
+	"github.com/agill17/rds-operator/pkg/rdsLib"
+
 	kubev1alpha1 "github.com/agill17/rds-operator/pkg/apis/agill/v1alpha1"
 	"github.com/agill17/rds-operator/pkg/lib"
 	"github.com/aws/aws-sdk-go/service/rds"
@@ -98,8 +100,17 @@ func (r *ReconcileDBInstance) Reconcile(request reconcile.Request) (reconcile.Re
 		}
 	}
 
-	err = r.crud(cr, actionType)
-	if err != nil {
+	// create a new instance obj
+	insObj := rdsLib.NewInstance(
+		r.rdsClient,
+		cr.Spec.CreateInstanceSpec,
+		cr.Spec.DeleteInstanceSpec,
+		cr.Spec.RestoreInstanceFromSnap,
+		cr, r.client, getInstanceID(cr),
+	)
+
+	// call the crud func
+	if err := rdsLib.Crud(insObj, actionType, cr.Status.Created, r.client); err != nil {
 		switch err.(type) {
 		case *lib.ErrorResourceCreatingInProgress:
 			logrus.Warnf("Namespace: %v | CR: %v | Msg: %v", cr.Namespace, cr.Name, err)
@@ -107,6 +118,11 @@ func (r *ReconcileDBInstance) Reconcile(request reconcile.Request) (reconcile.Re
 		default:
 			logrus.Errorf("Namespace: %v | DB Instance ID: %v | Msg: Something went wrong when creating db instance: %v", cr.Namespace, *cr.Spec.CreateInstanceSpec.DBInstanceIdentifier, err)
 		}
+		return reconcile.Result{}, err
+	}
+
+	// update instance status in cr
+	if err := r.updateInstanceStatusInCr(cr); err != nil {
 		return reconcile.Result{}, err
 	}
 

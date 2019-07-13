@@ -3,6 +3,8 @@ package rdsLib
 import (
 	"errors"
 
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	"github.com/agill17/rds-operator/pkg/lib"
 )
 
@@ -50,6 +52,47 @@ func SyncAndReconcileIfNotReady(rds RDS) error {
 		return &lib.ErrorResourceDeletingInProgress{Message: msgPrefix + "DeletingInProgress"}
 	case "":
 		return errors.New(msgPrefix + "NotYetInitilaized")
+	}
+
+	return nil
+}
+
+func Crud(rdsObject RDS, actionType RDSAction, crStatusCreated bool, client client.Client) error {
+
+	switch actionType {
+
+	// fresh install
+	case CREATE:
+
+		if !crStatusCreated {
+			if err := rdsObject.Create(); err != nil {
+				return err
+			}
+		}
+
+	// delete event
+	case DELETE:
+		err := rdsObject.Delete()
+		if err != nil {
+			return err
+		}
+
+	// restore from snapshot
+	case RESTORE:
+
+		if !crStatusCreated {
+			if err := rdsObject.Restore(); err != nil {
+				return err
+			}
+		}
+
+	}
+
+	if !crStatusCreated {
+		// return err if not ready in AWS yet
+		if err := SyncAndReconcileIfNotReady(rdsObject); err != nil {
+			return err
+		}
 	}
 
 	return nil

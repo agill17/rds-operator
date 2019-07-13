@@ -3,7 +3,9 @@ package dbcluster
 import (
 	"errors"
 
+	"github.com/agill17/rds-operator/pkg/lib"
 	"github.com/agill17/rds-operator/pkg/rdsLib"
+	"github.com/davecgh/go-spew/spew"
 
 	kubev1alpha1 "github.com/agill17/rds-operator/pkg/apis/agill/v1alpha1"
 )
@@ -52,4 +54,16 @@ func useCredentialsFrom(cr *kubev1alpha1.DBCluster) bool {
 		return true
 	}
 	return false
+}
+
+func (r *ReconcileDBCluster) updateClusterStatusInCr(cr *kubev1alpha1.DBCluster) error {
+	if !cr.Status.Created {
+		cr.Status.Created = true
+		_, cr.Status.DescriberClusterOutput = lib.DbClusterExists(
+			&lib.RDSGenerics{RDSClient: r.rdsClient,
+				ClusterID: getDBClusterID(cr)})
+		spew.Dump(cr.Status)
+		return lib.UpdateCrStatus(r.client, cr)
+	}
+	return nil
 }
