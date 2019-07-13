@@ -48,7 +48,7 @@ func (i *instance) Create() error {
 		if partOfCluster {
 			clusterExists, _ := lib.DbClusterExists(&lib.RDSGenerics{RDSClient: i.rdsClient, ClusterID: *i.createIn.DBClusterIdentifier})
 			if !clusterExists {
-				return &lib.ErrorResourceCreatingInProgress{Message: "ClusterForDBInstanceNotFoundError"}
+				return lib.ErrorResourceCreatingInProgress{Message: "ClusterForDBInstanceNotFoundError"}
 			}
 		}
 
@@ -63,11 +63,13 @@ func (i *instance) Create() error {
 // Delete Instance
 func (i *instance) Delete() error {
 	exists, _ := lib.DBInstanceExists(&lib.RDSGenerics{RDSClient: i.rdsClient, InstanceID: i.instanceID})
-	if !exists {
+	if exists {
 		if _, err := i.rdsClient.DeleteDBInstance(i.deleteIn); err != nil {
 			logrus.Errorf("Failed to delete DB Instance: %v", err)
 			return err
 		}
+		i.runtimeObj.SetFinalizers([]string{})
+		return lib.UpdateCr(i.k8sClient, i.runtimeObj)
 	}
 	return nil
 }

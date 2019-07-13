@@ -46,15 +46,15 @@ spec:
     SkipFinalSnapshot: false
     DBClusterIdentifier: amrit-aurora-cluster ## not required -- will be whatever is set inside createClusterSpec.DBClusterIdentifier
     # FinalDBSnapshotIdentifier: amrit-aurora-cluster-snap ## not required ( will be namespace-crName-timestamp)
-  initClusterDB:
-    jobSpec:
-      backoffLimit: 6
-      template: 
-        spec:
-          containers:
-          - name: mysql
-            image: mysql
-            command: ["sh", "-c", "hello"]
+  # initClusterDB:
+  #   jobSpec:
+  #     backoffLimit: 6
+  #     template: 
+  #       spec:
+  #         containers:
+  #         - name: mysql
+  #           image: mysql
+  #           command: ["sh", "-c", "hello"]
 ---
 apiVersion: agill.apps/v1alpha1
 kind: DBInstance

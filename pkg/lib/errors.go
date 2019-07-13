@@ -8,7 +8,7 @@ type ErrorResourceCreatingInProgress struct {
 }
 
 // rds resourcees creating in progress
-func (e *ErrorResourceCreatingInProgress) Error() string {
+func (e ErrorResourceCreatingInProgress) Error() string {
 	return e.Message
 }
 
@@ -18,7 +18,7 @@ type ErrorResourceDeletingInProgress struct {
 }
 
 // rds resourcees deleting in progress
-func (e *ErrorResourceDeletingInProgress) Error() string {
+func (e ErrorResourceDeletingInProgress) Error() string {
 	return e.Message
 }
 
@@ -26,6 +26,6 @@ type ErrorKubernetesSecretDoesNotHaveKeyError struct {
 	Message string
 }
 
-func (e *ErrorKubernetesSecretDoesNotHaveKeyError) Error() string {
+func (e ErrorKubernetesSecretDoesNotHaveKeyError) Error() string {
 	return e.Message
 }

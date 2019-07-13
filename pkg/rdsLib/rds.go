@@ -47,9 +47,9 @@ func SyncAndReconcileIfNotReady(rds RDS) error {
 	case "available":
 		return nil
 	case "creating", "backing-up", "restoring", "modifying":
-		return &lib.ErrorResourceCreatingInProgress{Message: msgPrefix + "CreatingInProgress"}
+		return lib.ErrorResourceCreatingInProgress{Message: msgPrefix + "CreatingInProgress"}
 	case "deleting":
-		return &lib.ErrorResourceDeletingInProgress{Message: msgPrefix + "DeletingInProgress"}
+		return lib.ErrorResourceDeletingInProgress{Message: msgPrefix + "DeletingInProgress"}
 	case "":
 		return errors.New(msgPrefix + "NotYetInitilaized")
 	}

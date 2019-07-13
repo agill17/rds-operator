@@ -66,7 +66,7 @@ func reconcileInitDBJob(cr *kubev1alpha1.DBCluster, client client.Client, rdsCli
 func isPrimaryInstanceAvailable(cr *kubev1alpha1.DBCluster, rdsClient *rds.RDS) (bool, error) {
 
 	if cr.Status.PrimaryInstanceID == "" {
-		return false, &lib.ErrorResourceCreatingInProgress{Message: "DBCluster is not aware of a instance ID yet. Please attach a DBInstance if you want to run initDBJob"}
+		return false, lib.ErrorResourceCreatingInProgress{Message: "DBCluster is not aware of a instance ID yet. Please attach a DBInstance if you want to run initDBJob"}
 	}
 
 	dbInstanceExists, instanceOut := lib.DBInstanceExists(&lib.RDSGenerics{RDSClient: rdsClient, InstanceID: cr.Status.PrimaryInstanceID})
@@ -76,7 +76,7 @@ func isPrimaryInstanceAvailable(cr *kubev1alpha1.DBCluster, rdsClient *rds.RDS) 
 		}
 	}
 
-	return false, &lib.ErrorResourceCreatingInProgress{Message: "DBCluster does not have a primary dbInstance in available state yet"}
+	return false, lib.ErrorResourceCreatingInProgress{Message: "DBCluster does not have a primary dbInstance in available state yet"}
 }
 
 // This should be run ONLY after cluster is in available state AND has 1 instance in available state

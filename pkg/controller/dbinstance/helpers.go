@@ -18,7 +18,7 @@ func (r *ReconcileDBInstance) dbClusterReady(clusterID string) error {
 	exists, out := lib.DbClusterExists(&lib.RDSGenerics{RDSClient: r.rdsClient, ClusterID: clusterID})
 	if exists {
 		if strings.ToLower(*out.DBClusters[0].Status) != "available" {
-			return &lib.ErrorResourceCreatingInProgress{Message: "ClusterCreatingInProgress"}
+			return lib.ErrorResourceCreatingInProgress{Message: "ClusterCreatingInProgress"}
 		}
 	}
 

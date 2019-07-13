@@ -127,7 +127,7 @@ func (r *ReconcileDBCluster) Reconcile(request reconcile.Request) (reconcile.Res
 
 			// when aws resource is still creating in progress, we throw ErrorResourceCreatingInProgress
 			// catch it and requeue
-		} else if err, ok := err.(*lib.ErrorResourceCreatingInProgress); ok {
+		} else if err, ok := err.(lib.ErrorResourceCreatingInProgress); ok {
 			logrus.Warnf("Namespace: %v | CR: %v | Msg: %v", cr.Namespace, cr.Name, err)
 			return reconcile.Result{Requeue: true}, nil
 

@@ -112,7 +112,7 @@ func (r *ReconcileDBInstance) Reconcile(request reconcile.Request) (reconcile.Re
 	// call the crud func
 	if err := rdsLib.Crud(insObj, actionType, cr.Status.Created, r.client); err != nil {
 		switch err.(type) {
-		case *lib.ErrorResourceCreatingInProgress:
+		case lib.ErrorResourceCreatingInProgress:
 			logrus.Warnf("Namespace: %v | CR: %v | Msg: %v", cr.Namespace, cr.Name, err)
 			return reconcile.Result{Requeue: true}, nil
 		default:
