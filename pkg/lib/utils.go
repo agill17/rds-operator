@@ -4,6 +4,8 @@ import (
 	"context"
 	"math/rand"
 
+	"k8s.io/apimachinery/pkg/api/meta"
+
 	v1 "k8s.io/api/core/v1"
 
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -70,4 +72,34 @@ func SecretExists(namespace, secretName string, client client.Client) (bool, *v1
 	}
 
 	return true, secretFound
+}
+
+func AddFinalizer(runtimeObj runtime.Object, client client.Client, finalizer string) error {
+	// get the runtime obj interface so I can add finalizers in metadata
+	// note: Accessor returns meta.Object which is an interface with funcs to muck around with
+	// k8s object metadata fields ONLY
+	accessor, err := meta.Accessor(runtimeObj)
+	if err != nil {
+		return nil
+	}
+
+	currentFinalizers := accessor.GetFinalizers()
+
+	if !finalizerExists(currentFinalizers, finalizer) {
+		currentFinalizers = append(currentFinalizers, finalizer)
+		accessor.SetFinalizers(currentFinalizers)
+		return UpdateCr(client, runtimeObj)
+	}
+
+	return nil
+
+}
+
+func finalizerExists(currentList []string, lookupFinalizer string) bool {
+	for _, e := range currentList {
+		if e == lookupFinalizer {
+			return true
+		}
+	}
+	return false
 }

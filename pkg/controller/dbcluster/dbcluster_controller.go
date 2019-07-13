@@ -88,15 +88,12 @@ func (r *ReconcileDBCluster) Reconcile(request reconcile.Request) (reconcile.Res
 	}
 
 	// set up finalizers
-	currentFinalizers := cr.GetFinalizers()
-	zeroFinalizers := len(currentFinalizers) == 0
+	zeroFinalizers := len(cr.GetFinalizers()) == 0
 	deletionTimeExists := cr.DeletionTimestamp != nil
 
 	// add finalizers
 	if !deletionTimeExists && zeroFinalizers {
-		currentFinalizers = append(currentFinalizers, lib.DBClusterFinalizer)
-		cr.SetFinalizers(currentFinalizers)
-		if err := lib.UpdateCr(r.client, cr); err != nil {
+		if err := lib.AddFinalizer(cr, r.client, lib.DBClusterFinalizer); err != nil {
 			return reconcile.Result{}, err
 		}
 	}

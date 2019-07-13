@@ -91,11 +91,8 @@ func (r *ReconcileDBSubnetGroup) Reconcile(request reconcile.Request) (reconcile
 
 	// set finalizers if needed
 	if !deletionTimeStampExists && !anyFinalizersExists {
-		currentFinalizers = append(currentFinalizers, lib.DBSubnetGroupFinalizer)
-		cr.SetFinalizers(currentFinalizers)
-		err := lib.UpdateCr(r.client, cr)
-		if err != nil {
-			return reconcile.Result{}, err // try again
+		if err := lib.AddFinalizer(cr, r.client, lib.DBSubnetGroupFinalizer); err != nil {
+			return reconcile.Result{}, err
 		}
 	}
 

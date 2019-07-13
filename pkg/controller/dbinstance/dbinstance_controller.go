@@ -93,9 +93,7 @@ func (r *ReconcileDBInstance) Reconcile(request reconcile.Request) (reconcile.Re
 
 	// add finalizers
 	if !deletionTimeExists && !anyFinalizersExists {
-		currentFinalizers = append(currentFinalizers, lib.DBInstanceFinalizer)
-		cr.SetFinalizers(currentFinalizers)
-		if err := lib.UpdateCr(r.client, cr); err != nil {
+		if err := lib.AddFinalizer(cr, r.client, lib.DBInstanceFinalizer); err != nil {
 			return reconcile.Result{}, err
 		}
 	}
