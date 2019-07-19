@@ -85,8 +85,8 @@ func (i *instance) Restore() error {
 	return nil
 }
 
-// GetAWSStatus returns resource state in aws
-func (i *instance) GetAWSStatus() (string, error) {
+// SynAwsStatusWithCRStatus returns resource state in aws
+func (i *instance) SynAwsStatusWithCRStatus() (string, error) {
 
 	exists, out := lib.DBInstanceExists(&lib.RDSGenerics{RDSClient: i.rdsClient, InstanceID: i.instanceID})
 	currentLocalPhase := i.runtimeObj.Status.CurrentPhase

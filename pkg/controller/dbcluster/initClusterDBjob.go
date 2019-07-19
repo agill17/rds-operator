@@ -132,7 +132,7 @@ func (r *ReconcileDBCluster) populateEnvVarsInCr(cr *kubev1alpha1.DBCluster) err
 
 /*
 	if initDBJobDefined,
-	then we need to run that AFTER the primary DBInstance
+	then we need to run the job AFTER the primary DBInstance
 	is marked available. We cannot run initDBJob until then
 	So repeat the DescribeDBCluster func until we have 1
 	primary instance available and set it inside the DBCluster

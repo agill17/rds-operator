@@ -17,8 +17,9 @@ type DBSubnetGroupSpec struct {
 
 // DBSubnetGroupStatus defines the observed state of DBSubnetGroup
 type DBSubnetGroupStatus struct {
-	Created        bool `json:"created"`
-	RecreateNeeded bool `json:"recreateNeeded"`
+	CurrentPhase   string `json:"currentPhase"`
+	Created        bool   `json:"created"`
+	RecreateNeeded bool   `json:"recreateNeeded"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

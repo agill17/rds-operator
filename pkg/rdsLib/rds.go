@@ -21,18 +21,18 @@ type RDS interface {
 	Create() error
 	Delete() error
 	Restore() error
-	GetAWSStatus() (string, error)
+	SynAwsStatusWithCRStatus() (string, error)
 }
 
-// SyncAndReconcileIfNotReady is a generic func to update CR status with aws resource status
+// AWSPhaseHandler is a generic func to update CR status with aws resource status
 // also throws generic errors if a aws resource is not available/ready
 // this is being used as a checkpoint to make sure aws resource is ready and available before performing more actions on it
 // for example;
 // - we do not want to deploy a k8s svc if db is not yet ready
 // - we do not want to run a initDB job if db is not yet ready
-func SyncAndReconcileIfNotReady(rds RDS) error {
+func AWSPhaseHandler(rds RDS) error {
 	// always update first before checking ( so restore and delete can be handled )
-	currentPhase, _ := rds.GetAWSStatus()
+	crStatus, _ := rds.SynAwsStatusWithCRStatus()
 
 	// hack to set correct error messages
 	var msgPrefix string
@@ -41,9 +41,11 @@ func SyncAndReconcileIfNotReady(rds RDS) error {
 		msgPrefix = "Cluster"
 	case *instance:
 		msgPrefix = "Instance"
+	case *subnetGroup:
+		msgPrefix = "SubnetGroup"
 	}
 
-	switch currentPhase {
+	switch crStatus {
 	case "available":
 		return nil
 	case "creating", "backing-up", "restoring", "modifying":
@@ -90,7 +92,7 @@ func Crud(rdsObject RDS, actionType RDSAction, crStatusCreated bool, client clie
 
 	if !crStatusCreated {
 		// return err if not ready in AWS yet
-		if err := SyncAndReconcileIfNotReady(rdsObject); err != nil {
+		if err := AWSPhaseHandler(rdsObject); err != nil {
 			return err
 		}
 	}

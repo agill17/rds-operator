@@ -135,7 +135,7 @@ func (dh *cluster) setTimestampInSnapshotName() {
 	}
 }
 
-func (dh *cluster) GetAWSStatus() (string, error) {
+func (dh *cluster) SynAwsStatusWithCRStatus() (string, error) {
 
 	exists, out := lib.DbClusterExists(&lib.RDSGenerics{RDSClient: dh.rdsClient, ClusterID: dh.clusterID})
 	currentLocalPhase := dh.runtimeObj.Status.CurrentPhase
