@@ -79,7 +79,7 @@ func Crud(rdsObject RDS, actionType RDSAction, crStatusCreated bool, client clie
 			return err
 		}
 
-	// restore from snapshot
+	// restore ( means different for each object )
 	case RESTORE:
 
 		if !crStatusCreated {
