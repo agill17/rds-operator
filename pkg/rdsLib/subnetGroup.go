@@ -58,7 +58,7 @@ func (s *subnetGroup) Restore() error {
 	return s.Create()
 }
 
-func (s *subnetGroup) SynAwsStatusWithCRStatus() (string, error) {
+func (s *subnetGroup) SyncAwsStatusWithCRStatus() (string, error) {
 	exists, out := lib.DBSubnetGroupExists(&lib.RDSGenerics{RDSClient: s.rdsClient, SubnetGroupName: *s.createIn.DBSubnetGroupName})
 	currentLocalPhase := s.runtimeObj.Status.CurrentPhase
 	if exists {

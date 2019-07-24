@@ -21,18 +21,18 @@ type RDS interface {
 	Create() error
 	Delete() error
 	Restore() error
-	SynAwsStatusWithCRStatus() (string, error)
+	SyncAwsStatusWithCRStatus() (string, error)
 }
 
 // AWSPhaseHandler is a generic func to update CR status with aws resource status
-// also throws generic errors if a aws resource is not available/ready
+// also throws errors if a aws resource is not available/ready
 // this is being used as a checkpoint to make sure aws resource is ready and available before performing more actions on it
 // for example;
 // - we do not want to deploy a k8s svc if db is not yet ready
 // - we do not want to run a initDB job if db is not yet ready
 func AWSPhaseHandler(rds RDS) error {
 	// always update first before checking ( so restore and delete can be handled )
-	crStatus, _ := rds.SynAwsStatusWithCRStatus()
+	crStatus, _ := rds.SyncAwsStatusWithCRStatus()
 
 	// hack to set correct error messages
 	var msgPrefix string
