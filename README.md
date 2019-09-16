@@ -1,4 +1,4 @@
-# RDS Operator
+# [RDS Operator](https://agill17.github.io/rds-operator/)
 
 ### Install and Deploy 
 
@@ -47,12 +47,14 @@
 
 
 ## TODO 
-~~- Centralize (create/delete/restore) into rdsLib and make use of existing interface funcs!~~ :white_check_mark:
+- Reconcile AWS resources periodically :x: ( Recreate DB incase they get deleted )
+  - Need some sort of trigger that the cloud resource got deleted.
+  - For the time being, use k8s objects as events to trigger reconcile instead of periodic sync?
+- ~~Centralize (create/delete/restore) into rdsLib and make use of existing interface funcs!~~ :white_check_mark:
 - Add docs
 - Make Secret resource conditional for both DBCluster(:white_check_mark:) and DBInstance ( some folks might want to pass credentials like username and password from a k8s secret so there is no need to deploy another secret with the same information )
 - Add support for initDB Job in dbCluster so that a user can have their db imported from an existing image ( DBCluster & DBInstance )
 - Make delete optional and get rid of deleteSpec to enforce snapshotting before deleting rds.
-- Reconcile AWS resources periodically :x: ( Recreate DB incase they get deleted )
 - Update ( COMING SOON ) :x:
 - CreateReadReplica **WHEN** deployed from scratch and or from snapshot ( COMING SOON ) :x:
 
