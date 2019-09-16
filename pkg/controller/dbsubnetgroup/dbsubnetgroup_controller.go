@@ -111,7 +111,7 @@ func (r *ReconcileDBSubnetGroup) Reconcile(request reconcile.Request) (reconcile
 		return reconcile.Result{}, nil
 	}
 
-	existsInAws, _ := lib.DBSubnetGroupExists(&lib.RDSGenerics{RDSClient: r.rdsClient, SubnetGroupName: *cr.Spec.DBSubnetGroupName})
+	existsInAws, _ := lib.DBSubnetGroupExists(lib.RDSGenerics{RDSClient: r.rdsClient, SubnetGroupName: *cr.Spec.DBSubnetGroupName})
 	statusMarkedDeployed := cr.Status.Created
 	if (!statusMarkedDeployed && !existsInAws) || (!existsInAws && statusMarkedDeployed) {
 		logrus.Infof("Creating DBSubnetGroup %v for namespace: %v", cr.Name, cr.Namespace)

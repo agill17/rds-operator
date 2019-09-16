@@ -40,13 +40,13 @@ func NewInstance(rdsClient *rds.RDS,
 
 // Create Instance
 func (i *instance) Create() error {
-	exists, _ := lib.DBInstanceExists(&lib.RDSGenerics{RDSClient: i.rdsClient, InstanceID: i.instanceID})
+	exists, _ := lib.DBInstanceExists(lib.RDSGenerics{RDSClient: i.rdsClient, InstanceID: i.instanceID})
 	if !exists {
 
 		// if instance is part of cluster, check cluster existence before
 		partOfCluster := i.createIn.DBClusterIdentifier != nil
 		if partOfCluster {
-			clusterExists, _ := lib.DbClusterExists(&lib.RDSGenerics{RDSClient: i.rdsClient, ClusterID: *i.createIn.DBClusterIdentifier})
+			clusterExists, _ , _:= lib.DbClusterExists(lib.RDSGenerics{RDSClient: i.rdsClient, ClusterID: *i.createIn.DBClusterIdentifier})
 			if !clusterExists {
 				return lib.ErrorResourceCreatingInProgress{Message: "ClusterForDBInstanceNotFoundError"}
 			}
@@ -62,7 +62,7 @@ func (i *instance) Create() error {
 
 // Delete Instance
 func (i *instance) Delete() error {
-	exists, _ := lib.DBInstanceExists(&lib.RDSGenerics{RDSClient: i.rdsClient, InstanceID: i.instanceID})
+	exists, _ := lib.DBInstanceExists(lib.RDSGenerics{RDSClient: i.rdsClient, InstanceID: i.instanceID})
 	if exists {
 		if _, err := i.rdsClient.DeleteDBInstance(i.deleteIn); err != nil {
 			logrus.Errorf("Failed to delete DB Instance: %v", err)
@@ -75,7 +75,7 @@ func (i *instance) Delete() error {
 
 // Restore Instance
 func (i *instance) Restore() error {
-	exists, _ := lib.DBInstanceExists(&lib.RDSGenerics{RDSClient: i.rdsClient, InstanceID: i.instanceID})
+	exists, _ := lib.DBInstanceExists(lib.RDSGenerics{RDSClient: i.rdsClient, InstanceID: i.instanceID})
 	if !exists {
 		if _, err := i.rdsClient.RestoreDBInstanceFromDBSnapshot(i.restoreFromSnapIn); err != nil {
 			logrus.Errorf("Failed to restore DB cluster from snapshot :%v", err)
@@ -88,7 +88,7 @@ func (i *instance) Restore() error {
 // SyncAwsStatusWithCRStatus returns resource state in aws
 func (i *instance) SyncAwsStatusWithCRStatus() (string, error) {
 
-	exists, out := lib.DBInstanceExists(&lib.RDSGenerics{RDSClient: i.rdsClient, InstanceID: i.instanceID})
+	exists, out := lib.DBInstanceExists(lib.RDSGenerics{RDSClient: i.rdsClient, InstanceID: i.instanceID})
 	currentLocalPhase := i.runtimeObj.Status.CurrentPhase
 
 	if exists {

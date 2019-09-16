@@ -15,7 +15,7 @@ import (
 // throws ErrorResourceCreatingInProgress when dbCluster in AWS is not marked available
 func (r *ReconcileDBInstance) dbClusterReady(clusterID string) error {
 	var err error
-	exists, out := lib.DbClusterExists(&lib.RDSGenerics{RDSClient: r.rdsClient, ClusterID: clusterID})
+	exists, out, _ := lib.DbClusterExists(lib.RDSGenerics{RDSClient: r.rdsClient, ClusterID: clusterID})
 	if exists {
 		if strings.ToLower(*out.DBClusters[0].Status) != "available" {
 			return lib.ErrorResourceCreatingInProgress{Message: "ClusterCreatingInProgress"}
@@ -95,7 +95,7 @@ func (r *ReconcileDBInstance) updateInstanceStatusInCr(cr *kubev1alpha1.DBInstan
 	if !cr.Status.Created {
 		cr.Status.Created = true
 		_, cr.Status.RDSInstanceStatus = lib.DBInstanceExists(
-			&lib.RDSGenerics{RDSClient: r.rdsClient,
+			lib.RDSGenerics{RDSClient: r.rdsClient,
 				ClusterID: getInstanceID(cr)})
 		spew.Dump(cr.Status)
 		return lib.UpdateCrStatus(r.client, cr)

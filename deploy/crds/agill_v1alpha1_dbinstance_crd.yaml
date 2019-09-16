@@ -29,6 +29,17 @@ spec:
           type: object
         spec:
           type: object
+          required: ['deleteInstanceSpec']
+          properties:
+            createInstanceSpec:
+              type: object
+            deleteInstanceSpec:
+              type: object
+            createInstanceFromSnapshot:
+              type: object
+          oneOf:
+          - required: ['createInstanceSpec']
+          - required: ['createInstanceFromSnapshot']
         status:
           type: object
   version: v1alpha1

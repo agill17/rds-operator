@@ -1,8 +1,16 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: rds-operator
+  namespace: rds-operator
+---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
+kind: ClusterRole
 metadata:
   creationTimestamp: null
   name: rds-operator
+  namespace: rds-operator
 rules:
 - apiGroups:
   - ""
@@ -16,6 +24,12 @@ rules:
   - secrets
   verbs:
   - '*'
+- apiGroups:
+  - ""
+  resources:
+  - namespaces
+  verbs:
+  - get
 - apiGroups:
   - apps
   resources:
@@ -33,18 +47,22 @@ rules:
   - get
   - create
 - apiGroups:
-  - apps
-  resourceNames:
-  - rds-operator
-  resources:
-  - deployments/finalizers
-  verbs:
-  - update
-- apiGroups:
   - agill.apps
   resources:
   - '*'
-  - dbclusters
-  - dbsubnetgroups
   verbs:
   - '*'
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: rds-operator
+  namespace: rds-operator
+subjects:
+- kind: ServiceAccount
+  name: rds-operator
+  namespace: rds-operator
+roleRef:
+  kind: ClusterRole
+  name: rds-operator
+  apiGroup: rbac.authorization.k8s.io

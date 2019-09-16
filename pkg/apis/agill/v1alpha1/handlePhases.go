@@ -6,7 +6,7 @@ package v1alpha1
 
 // func (i *DBInstance) SyncRemoteStateWithCR(client client.Client, rdsClient *rds.RDS) error {
 
-// 	exists, out := lib.DBInstanceExists(&lib.RDSGenerics{RDSClient: rdsClient, InstanceID: *i.Spec.DBInstanceIdentifier})
+// 	exists, out := lib.DBInstanceExists(lib.RDSGenerics{RDSClient: rdsClient, InstanceID: *i.Spec.DBInstanceIdentifier})
 // 	currentLocalPhase := i.Status.CurrentPhase
 
 // 	if exists {
@@ -26,7 +26,7 @@ package v1alpha1
 
 // func (i *DBCluster) SyncRemoteStateWithCR(client client.Client, rdsClient *rds.RDS) error {
 
-// 	exists, out := lib.DBInstanceExists(&lib.RDSGenerics{RDSClient: rdsClient, InstanceID: *i.Spec.DBClusterIdentifier})
+// 	exists, out := lib.DBInstanceExists(lib.RDSGenerics{RDSClient: rdsClient, InstanceID: *i.Spec.DBClusterIdentifier})
 // 	currentLocalPhase := i.Status.CurrentPhase
 
 // 	if exists {

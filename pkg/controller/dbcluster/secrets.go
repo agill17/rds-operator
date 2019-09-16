@@ -93,12 +93,12 @@ func getSecretObj(cr *kubev1alpha1.DBCluster, rdsAction rdsLib.RDSAction) *v1.Se
 func getSecretData(cr *kubev1alpha1.DBCluster, rdsAction rdsLib.RDSAction) map[string][]byte {
 	var user, pass string = defaultUsername, defaultPassword
 
-	if rdsAction == rdsLib.CREATE && cr.Spec.CreateClusterSpec.MasterUsername != nil {
-		user = *cr.Spec.CreateClusterSpec.MasterUsername
+	if rdsAction == rdsLib.CREATE && cr.ClusterSpec.MasterUsername != nil {
+		user = *cr.ClusterSpec.MasterUsername
 	}
 
-	if rdsAction == rdsLib.CREATE && cr.Spec.CreateClusterSpec.MasterUserPassword != nil {
-		pass = *cr.Spec.CreateClusterSpec.MasterUserPassword
+	if rdsAction == rdsLib.CREATE && cr.ClusterSpec.MasterUserPassword != nil {
+		pass = *cr.ClusterSpec.MasterUserPassword
 	}
 
 	in := map[string][]byte{
@@ -115,8 +115,8 @@ func shouldCreateSecret(cr *kubev1alpha1.DBCluster) (bool, string, string, strin
 	// when user provides a secret to get credentials from
 	// dont create secret
 	if useCredentialsFrom(cr) {
-		return false, cr.Spec.CredentialsFrom.SecretName.Name, cr.Spec.CredentialsFrom.UsernameKey,
-			cr.Spec.CredentialsFrom.PasswordKey
+		return false, cr.ClusterSpec.CredentialsFrom.SecretName.Name, cr.ClusterSpec.CredentialsFrom.UsernameKey,
+			cr.ClusterSpec.CredentialsFrom.PasswordKey
 	}
 
 	// or

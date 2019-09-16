@@ -1,7 +1,9 @@
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: rds-operator
+  namespace: rds-operator
 spec:
   replicas: 1
   selector:
@@ -14,20 +16,36 @@ spec:
     spec:
       serviceAccountName: rds-operator
       containers:
-        - name: rds-operator
-          # Replace this with the built image name
-          image: REPLACE_IMAGE
-          command:
-          - rds-operator
-          imagePullPolicy: Always
-          env:
-            - name: WATCH_NAMESPACE
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.namespace
-            - name: POD_NAME
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.name
-            - name: OPERATOR_NAME
-              value: "rds-operator"
+      - name: rds-operator
+        image: agill17/rds-operator:0.4.2
+        ports:
+        - containerPort: 8383
+          name: metrics
+        command:
+        - rds-operator
+        imagePullPolicy: Always
+        readinessProbe:
+          exec:
+            command:
+            - stat
+            - /tmp/operator-sdk-ready
+          initialDelaySeconds: 4
+          periodSeconds: 10
+          failureThreshold: 1
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: OPERATOR_NAME
+          value: "rds-operator"
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: aws-creds
+              key: "AWS_ACCESS"
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: aws-creds
+              key: "AWS_SECRET"

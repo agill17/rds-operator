@@ -3,6 +3,7 @@ package rdsLib
 import (
 	"errors"
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"strings"
 	"time"
 
@@ -44,9 +45,9 @@ func NewCluster(rdsClient *rds.RDS, createInput *rds.CreateDBClusterInput,
 }
 
 // Create Cluster
-func (dh *cluster) Create() error {
+func (dh cluster) Create() error {
 
-	exists, _ := lib.DbClusterExists(&lib.RDSGenerics{RDSClient: dh.rdsClient, ClusterID: dh.clusterID})
+	exists, _, _ := lib.DbClusterExists(lib.RDSGenerics{RDSClient: dh.rdsClient, ClusterID: dh.clusterID})
 	if !exists {
 
 		if err := dh.addCredsToClusterInput(); err != nil {
@@ -65,11 +66,19 @@ func (dh *cluster) Create() error {
 // Delete Cluster
 func (dh *cluster) Delete() error {
 
-	exists, _ := lib.DbClusterExists(&lib.RDSGenerics{RDSClient: dh.rdsClient, ClusterID: dh.clusterID})
+	exists, _, _ := lib.DbClusterExists(lib.RDSGenerics{RDSClient: dh.rdsClient, ClusterID: dh.clusterID})
 	if exists {
+
+		dh.setTimestampInSnapshotName()
+		logrus.Infof(*dh.deleteInput.FinalDBSnapshotIdentifier)
 		if _, err := dh.rdsClient.DeleteDBCluster(dh.deleteInput); err != nil {
-			logrus.Errorf("Failed to delete DB cluster: %v", err)
-			return err
+
+			// if cluster is not found, return error, else move on from the delete call
+			if err.(awserr.Error).Code() != rds.ErrCodeDBClusterNotFoundFault {
+				logrus.Errorf("Failed to delete DB cluster: %v", err)
+				return err
+			}
+
 		}
 		logrus.Warnf("Successfully Deleted DB Cluster: %v", *dh.deleteInput.DBClusterIdentifier)
 		return lib.RemoveFinalizer(dh.runtimeObj, dh.k8sClient, lib.DBClusterFinalizer)
@@ -80,7 +89,7 @@ func (dh *cluster) Delete() error {
 // Restore Cluster
 func (dh *cluster) Restore() error {
 
-	exists, _ := lib.DbClusterExists(&lib.RDSGenerics{RDSClient: dh.rdsClient, ClusterID: dh.clusterID})
+	exists, _, _ := lib.DbClusterExists(lib.RDSGenerics{RDSClient: dh.rdsClient, ClusterID: dh.clusterID})
 	if !exists {
 
 		if dh.restoreFromSnapInput.DBClusterIdentifier == nil ||
@@ -130,14 +139,14 @@ func (dh *cluster) addCredsToClusterInput() error {
 func (dh *cluster) setTimestampInSnapshotName() {
 	if dh.deleteInput.FinalDBSnapshotIdentifier != nil && !*dh.deleteInput.SkipFinalSnapshot {
 		currentTime := time.Now().Format("2006-01-02:03-02-44")
-		snashotName := fmt.Sprintf("%v-%v", dh.deleteInput.DBClusterIdentifier, strings.Replace(currentTime, ":", "-", -1))
+		snashotName := fmt.Sprintf("%v-%v", *dh.deleteInput.DBClusterIdentifier, strings.Replace(currentTime, ":", "-", -1))
 		dh.deleteInput.FinalDBSnapshotIdentifier = &snashotName
 	}
 }
 
 func (dh *cluster) SyncAwsStatusWithCRStatus() (string, error) {
 
-	exists, out := lib.DbClusterExists(&lib.RDSGenerics{RDSClient: dh.rdsClient, ClusterID: dh.clusterID})
+	exists, out, _ := lib.DbClusterExists(lib.RDSGenerics{RDSClient: dh.rdsClient, ClusterID: dh.clusterID})
 	currentLocalPhase := dh.runtimeObj.Status.CurrentPhase
 
 	if exists {

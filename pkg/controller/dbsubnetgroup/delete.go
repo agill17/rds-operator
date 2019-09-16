@@ -8,7 +8,7 @@ import (
 
 func (r *ReconcileDBSubnetGroup) deleteSubnetGroup(name string) error {
 	var err error
-	if exists, _ := lib.DBSubnetGroupExists(&lib.RDSGenerics{RDSClient: r.rdsClient, SubnetGroupName: name}); exists {
+	if exists, _ := lib.DBSubnetGroupExists(lib.RDSGenerics{RDSClient: r.rdsClient, SubnetGroupName: name}); exists {
 		logrus.Warnf("DBSubentGroup %v exists, going to delete now.", name)
 		_, err := r.rdsClient.DeleteDBSubnetGroup(&rds.DeleteDBSubnetGroupInput{DBSubnetGroupName: &name})
 		if err != nil {

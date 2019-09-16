@@ -1,7 +1,0 @@
-apiVersion: agill.apps/v1alpha1
-kind: DBSubnetGroup
-metadata:
-  name: example-dbsubnetgroup
-spec:
-  # Add fields here
-  size: 3

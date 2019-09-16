@@ -46,7 +46,7 @@ func (r *ReconcileDBCluster) createExternalSvc(cr *kubev1alpha1.DBCluster) error
 func getClusterSvc(cr *kubev1alpha1.DBCluster) *v1.Service {
 	return &v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      cr.Spec.ServiceName,
+			Name:      cr.ServiceName,
 			Namespace: cr.Namespace,
 		},
 		Spec: v1.ServiceSpec{

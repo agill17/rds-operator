@@ -30,7 +30,7 @@ func NewSubnetGroup(createIn *rds.CreateDBSubnetGroupInput, deleteIn *rds.Delete
 }
 
 func (s *subnetGroup) Create() error {
-	exists, _ := lib.DBSubnetGroupExists(&lib.RDSGenerics{SubnetGroupName: *s.createIn.DBSubnetGroupName, RDSClient: s.rdsClient})
+	exists, _ := lib.DBSubnetGroupExists(lib.RDSGenerics{SubnetGroupName: *s.createIn.DBSubnetGroupName, RDSClient: s.rdsClient})
 	if !exists {
 		logrus.Infof("Creating DBSubnetGroup for namespace: %v", s.runtimeObj.Namespace)
 		if _, err := s.rdsClient.CreateDBSubnetGroup(s.createIn); err != nil {
@@ -42,7 +42,7 @@ func (s *subnetGroup) Create() error {
 }
 
 func (s *subnetGroup) Delete() error {
-	exists, _ := lib.DBSubnetGroupExists(&lib.RDSGenerics{SubnetGroupName: *s.createIn.DBSubnetGroupName, RDSClient: s.rdsClient})
+	exists, _ := lib.DBSubnetGroupExists(lib.RDSGenerics{SubnetGroupName: *s.createIn.DBSubnetGroupName, RDSClient: s.rdsClient})
 	if exists {
 		logrus.Infof("Deleting DBSubnetGroup for namespace: %v", s.runtimeObj.Namespace)
 		if _, err := s.rdsClient.DeleteDBSubnetGroup(s.deleteIn); err != nil {
@@ -59,7 +59,7 @@ func (s *subnetGroup) Restore() error {
 }
 
 func (s *subnetGroup) SyncAwsStatusWithCRStatus() (string, error) {
-	exists, out := lib.DBSubnetGroupExists(&lib.RDSGenerics{RDSClient: s.rdsClient, SubnetGroupName: *s.createIn.DBSubnetGroupName})
+	exists, out := lib.DBSubnetGroupExists(lib.RDSGenerics{RDSClient: s.rdsClient, SubnetGroupName: *s.createIn.DBSubnetGroupName})
 	currentLocalPhase := s.runtimeObj.Status.CurrentPhase
 	if exists {
 		logrus.Infof("DBCluster CR: %v | Namespace: %v | Current phase in AWS: %v", s.runtimeObj.Name, s.runtimeObj.Namespace, *out.DBSubnetGroups[0].SubnetGroupStatus)

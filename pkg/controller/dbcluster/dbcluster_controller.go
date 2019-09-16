@@ -76,18 +76,11 @@ func (r *ReconcileDBCluster) Reconcile(request reconcile.Request) (reconcile.Res
 		return reconcile.Result{}, err
 	}
 
-	if err := validateRequiredInput(cr); err != nil {
-		return reconcile.Result{}, err
-	}
 
 	// get action type ( ALWAYS )
 	// actionType changes between create/restore and delete
 	// actionType will be delete when its time to delete rds cluster
 	actionType := getActionType(cr)
-
-	if err := r.setUpDefaultsIfNeeded(cr, actionType); err != nil {
-		return reconcile.Result{}, err
-	}
 
 	// set up finalizers
 	zeroFinalizers := len(cr.GetFinalizers()) == 0
@@ -103,17 +96,29 @@ func (r *ReconcileDBCluster) Reconcile(request reconcile.Request) (reconcile.Res
 	// create/update secret
 	// this also updates CR status with what secret to use and what userKey and passKey to use
 	// whether that key is coming from a user provided secret to use or from internally
-	if err := r.reconcileSecret(cr, actionType); err != nil && !errors.IsForbidden(err) {
+	if actionType != rdsLib.DELETE {
+		if err := r.reconcileSecret(cr, actionType); err != nil && !errors.IsForbidden(err) {
+			return reconcile.Result{}, err
+		}
+	}
+
+	// setup create/restore rds inputs and reconcile if any errors
+	createIn , err := createClusterInput(cr)
+	if err != nil {
+		logrus.Errorf("Failed to construct createInput for dbCluster: %v", err)
+		return reconcile.Result{}, err
+	}
+	restoreIn , err := restoreFromSnapshotInput(cr)
+	if err != nil {
+		logrus.Errorf("Failed to construct restoreInput for dbCluster: %v", err)
 		return reconcile.Result{}, err
 	}
 
-	// returns cluster struct which is also part of rds interface
-	// so we can call all funcs that are part of the interface as long as cluster satifies the interface
-	// cluster obj implements and satifies RDS interface by implementing all methods of that interface
+
 	clusterObj := rdsLib.NewCluster(r.rdsClient,
-		cr.Spec.CreateClusterSpec,
-		cr.Spec.DeleteSpec,
-		cr.Spec.CreateClusterFromSnapshot, cr, r.client, getDBClusterID(cr))
+		createIn,
+		deleteClusterInput(cr),
+		restoreIn, cr, r.client, getDBClusterID(cr))
 
 	if err := rdsLib.Crud(clusterObj, actionType, cr.Status.Created, r.client); err != nil {
 
@@ -122,7 +127,7 @@ func (r *ReconcileDBCluster) Reconcile(request reconcile.Request) (reconcile.Res
 		// requeue
 
 		if errors.IsNotFound(err) || errors.IsForbidden(err) {
-			logrus.Errorf("Namespace: %v | CR: %v | %v", cr.Namespace, cr.Name, err)
+			logrus.Errorf("Namespace: %v | CR: %v | Msg: %v", cr.Namespace, cr.Name, err)
 			return reconcile.Result{Requeue: true}, err
 
 			// when aws resource is still creating in progress, we throw ErrorResourceCreatingInProgress

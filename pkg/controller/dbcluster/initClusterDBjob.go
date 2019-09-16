@@ -32,7 +32,7 @@ const (
 func reconcileInitDBJob(cr *kubev1alpha1.DBCluster, client client.Client, rdsClient *rds.RDS) error {
 
 	// if defined then proceed
-	if cr.Spec.InitClusterDB.Spec != nil {
+	if cr.InitClusterDB.Spec != nil {
 
 		if err := setPrimaryInstanceID(cr, rdsClient, client); err != nil {
 			return err
@@ -49,7 +49,7 @@ func reconcileInitDBJob(cr *kubev1alpha1.DBCluster, client client.Client, rdsCli
 					Name:      fmt.Sprintf("%v-initdb", cr.Name),
 					Namespace: cr.Namespace,
 				},
-				Spec: *cr.Spec.InitClusterDB.Spec,
+				Spec: *cr.InitClusterDB.Spec,
 			}
 
 			if err := client.Create(context.TODO(), jobSpec); err != nil && !apiErrors.IsAlreadyExists(err) {
@@ -69,7 +69,7 @@ func isPrimaryInstanceAvailable(cr *kubev1alpha1.DBCluster, rdsClient *rds.RDS) 
 		return false, lib.ErrorResourceCreatingInProgress{Message: "DBCluster is not aware of a instance ID yet. Please attach a DBInstance if you want to run initDBJob"}
 	}
 
-	dbInstanceExists, instanceOut := lib.DBInstanceExists(&lib.RDSGenerics{RDSClient: rdsClient, InstanceID: cr.Status.PrimaryInstanceID})
+	dbInstanceExists, instanceOut := lib.DBInstanceExists(lib.RDSGenerics{RDSClient: rdsClient, InstanceID: cr.Status.PrimaryInstanceID})
 	if dbInstanceExists {
 		if *instanceOut.DBInstances[0].DBInstanceStatus == "available" {
 			return true, nil
@@ -85,7 +85,7 @@ func (r *ReconcileDBCluster) populateEnvVarsInCr(cr *kubev1alpha1.DBCluster) err
 	userKey := cr.Status.UsernameKey
 	passKey := cr.Status.PasswordKey
 	clusterEndpoint := *cr.Status.DescriberClusterOutput.DBClusters[0].Endpoint
-	jobSpec := cr.Spec.InitClusterDB
+	jobSpec := cr.InitClusterDB
 
 	if len(jobSpec.Spec.Template.Spec.Containers) == 0 {
 		return errors.New("InitJobContainerEmptyError")
@@ -143,10 +143,15 @@ func setPrimaryInstanceID(cr *kubev1alpha1.DBCluster, rdsClient *rds.RDS, client
 	clusterAvail := cr.Status.CurrentPhase == "available"
 	if cr.Status.PrimaryInstanceID == "" && clusterAvail {
 		// describe cluster to get instance members
-		_, out := lib.DbClusterExists(&lib.RDSGenerics{RDSClient: rdsClient, ClusterID: getDBClusterID(cr)})
+		_, out, err := lib.DbClusterExists(lib.RDSGenerics{RDSClient: rdsClient, ClusterID: getDBClusterID(cr)})
+		if err != nil {
+			return err
+		}
+
 		if len(out.DBClusters[0].DBClusterMembers) == 0 {
 			return errors.New("NoDBInstancesAttahcedToCluster")
 		}
+
 		for _, eachMember := range out.DBClusters[0].DBClusterMembers {
 			if *eachMember.IsClusterWriter {
 				logrus.Infof("Namespace: %v | CR: %v | Found instance that is part of cluster to run initDBJob", cr.Namespace, cr.Name)
