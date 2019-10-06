@@ -28,20 +28,56 @@ spec:
         metadata:
           type: object
         spec:
-          type: object
-          required: ['deleteInstanceSpec']
           properties:
+            createInstanceFromSnapshot:
+              type: object
             createInstanceSpec:
               type: object
             deleteInstanceSpec:
               type: object
-            createInstanceFromSnapshot:
-              type: object
-          oneOf:
-          - required: ['createInstanceSpec']
-          - required: ['createInstanceFromSnapshot']
-        status:
+            instanceSecretName:
+              type: string
+            region:
+              type: string
+            serviceName:
+              type: string
+          required:
+          - region
+          - deleteInstanceSpec
           type: object
+        status:
+          properties:
+            created:
+              type: boolean
+            currentPhase:
+              type: string
+            dbClusterMarkedAvail:
+              type: boolean
+            initJobSuccessfull:
+              type: boolean
+            initJobTimedOut:
+              type: boolean
+            password:
+              type: string
+            rdsInstanceStatus:
+              type: object
+            restoredFromSnapshotName:
+              type: string
+            username:
+              type: string
+          required:
+          - dbClusterMarkedAvail
+          - rdsInstanceStatus
+          - created
+          - restoredFromSnapshotName
+          - initJobTimedOut
+          - initJobSuccessfull
+          - username
+          - password
+          - currentPhase
+          type: object
+      required:
+      - spec
   version: v1alpha1
   versions:
   - name: v1alpha1

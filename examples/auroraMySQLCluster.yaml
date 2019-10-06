@@ -32,14 +32,15 @@ clusterSpec:
   databaseName: test
   deletionProtection: false
   storageEncrypted: false
-  initClusterDB:
-    image: agill17/mysqltest
-    command: ["sh", "-c", "mysql -u $DB_CLUSTER_USERNAME -p$DB_CLUSTER_PASSWORD -h $DB_CLUSTER_ENDPOINT < /docker-entrypoint-initdb.d/test.sql"]
+  masterUsername: "amrit"
   credentialsFrom:
     secret:
       name: cluster-credentials
     usernameKey: MASTER_USERNAME
     passwordKey: MASTER_PASSWORD
+initClusterDB:
+  image: agill17/mysqltest
+  command: ["sh", "-c", "mysql -u $DB_CLUSTER_USERNAME -p$DB_CLUSTER_PASSWORD -h $DB_CLUSTER_ENDPOINT < /docker-entrypoint-initdb.d/test.sql"]
 #---
 #apiVersion: agill.apps/v1alpha1
 #kind: DBInstance

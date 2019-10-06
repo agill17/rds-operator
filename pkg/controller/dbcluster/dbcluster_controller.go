@@ -165,7 +165,15 @@ func (r *ReconcileDBCluster) Reconcile(request reconcile.Request) (reconcile.Res
 
 	// reconcile k8s job
 	if err := reconcileInitDBJob(cr, r.client, r.rdsClient); err != nil {
-		return reconcile.Result{}, err
+
+		switch err.(type) {
+		case utils.ErrorNoDBInstanceAttachedToClusterYet, utils.ErrorResourceCreatingInProgress:
+			logrus.Warnf("Namespace: %v | CR: %v | Msg: %v", cr.Namespace, cr.Name, err)
+			return reconcile.Result{Requeue: true}, nil
+		default:
+			logrus.Errorf("Namespace: %v | CR: %v | Msg: %v", cr.Namespace, cr.Name, err)
+			return reconcile.Result{}, err
+		}
 	}
 
 	// reconcile k8s svc

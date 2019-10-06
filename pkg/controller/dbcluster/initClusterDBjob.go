@@ -32,7 +32,6 @@ const (
 */
 
 func reconcileInitDBJob(cr *kubev1alpha1.DBCluster, client client.Client, rdsClient *rds.RDS) error {
-
 	// if defined then proceed
 	if cr.InitClusterDB.Image != "" {
 
@@ -144,10 +143,11 @@ func populateEnvVarsInCr(cr *kubev1alpha1.DBCluster) []v1.EnvVar {
 func setPrimaryInstanceID(cr *kubev1alpha1.DBCluster, rdsClient *rds.RDS, client client.Client) error {
 	clusterAvail := cr.Status.CurrentPhase == "available"
 	if cr.Status.PrimaryInstanceID == "" && clusterAvail {
+
 		// describe cluster to get instance members
 		_, out,_ := utils.DbClusterExists(utils.RDSGenerics{RDSClient: rdsClient, ClusterID: getDBClusterID(cr)})
 		if len(out.DBClusters[0].DBClusterMembers) == 0 {
-			return errors.New("NoDBInstancesAttahcedToCluster")
+			return utils.ErrorNoDBInstanceAttachedToClusterYet{Message: "There are no db instances attached to " + *cr.ClusterSpec.DBClusterIdentifier + " cluster yet",}
 		}
 		for _, eachMember := range out.DBClusters[0].DBClusterMembers {
 			if *eachMember.IsClusterWriter {

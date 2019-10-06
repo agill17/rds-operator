@@ -29,3 +29,11 @@ type ErrorKubernetesSecretDoesNotHaveKeyError struct {
 func (e ErrorKubernetesSecretDoesNotHaveKeyError) Error() string {
 	return e.Message
 }
+
+type ErrorNoDBInstanceAttachedToClusterYet struct {
+	Message string
+}
+
+func (e ErrorNoDBInstanceAttachedToClusterYet) Error() string {
+	return e.Message
+}
