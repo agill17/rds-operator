@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"github.com/aws/aws-sdk-go/service/rds"
 	"github.com/jinzhu/copier"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -29,7 +30,7 @@ type DBSubnetGroup struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	//Spec   *rds.CreateDBSubnetGroupInput `json:"createDBSubnetGroupSpec,omitempty"`
+	Spec   *rds.CreateDBSubnetGroupInput `json:"createDBSubnetGroupSpec,omitempty"`
 	Status DBSubnetGroupStatus           `json:"status,omitempty"`
 }
 
@@ -51,7 +52,7 @@ func (in *DBSubnetGroup) DeepCopyInto(out *DBSubnetGroup) {
 	out.TypeMeta = in.TypeMeta
 	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
 	in.Status.DeepCopyInto(&out.Status)
-	copier.Copy(&in, &out)
+	copier.Copy(&in.Spec, &out.Spec)
 
 	return
 }
