@@ -31,9 +31,10 @@ clusterSpec:
   dbClusterIdentifier: amrit-aurora-cluster ## required
   databaseName: test
   deletionProtection: false
-  # MasterUsername: root # not required if credentialsFrom set ( if none passed: generates a random one if not passed )
-  # MasterUserPassword: password # not required if credentialsFrom set ( if none passed: generates a random one if not passed )
   storageEncrypted: false
+  initClusterDB:
+    image: agill17/mysqltest
+    command: ["sh", "-c", "mysql -u $DB_CLUSTER_USERNAME -p$DB_CLUSTER_PASSWORD -h $DB_CLUSTER_ENDPOINT < /docker-entrypoint-initdb.d/test.sql"]
   credentialsFrom:
     secret:
       name: cluster-credentials

@@ -9,16 +9,16 @@ import (
 	"github.com/sirupsen/logrus"
 
 	kubev1alpha1 "github.com/agill17/rds-operator/pkg/apis/agill/v1alpha1"
-	"github.com/agill17/rds-operator/pkg/lib"
+	"github.com/agill17/rds-operator/pkg/utils"
 )
 
 // throws ErrorResourceCreatingInProgress when dbCluster in AWS is not marked available
 func (r *ReconcileDBInstance) dbClusterReady(clusterID string) error {
 	var err error
-	exists, out, _ := lib.DbClusterExists(lib.RDSGenerics{RDSClient: r.rdsClient, ClusterID: clusterID})
+	exists, out, _ := utils.DbClusterExists(utils.RDSGenerics{RDSClient: r.rdsClient, ClusterID: clusterID})
 	if exists {
 		if strings.ToLower(*out.DBClusters[0].Status) != "available" {
-			return lib.ErrorResourceCreatingInProgress{Message: "ClusterCreatingInProgress"}
+			return utils.ErrorResourceCreatingInProgress{Message: "ClusterCreatingInProgress"}
 		}
 	}
 
@@ -86,7 +86,7 @@ func (r *ReconcileDBInstance) waitForClusterIfNeeded(cr *kubev1alpha1.DBInstance
 			return err
 		}
 		cr.Status.DBClusterMarkedAvail = true
-		return lib.UpdateCrStatus(r.client, cr)
+		return utils.UpdateCrStatus(r.client, cr)
 	}
 	return err
 }
@@ -94,11 +94,11 @@ func (r *ReconcileDBInstance) waitForClusterIfNeeded(cr *kubev1alpha1.DBInstance
 func (r *ReconcileDBInstance) updateInstanceStatusInCr(cr *kubev1alpha1.DBInstance) error {
 	if !cr.Status.Created {
 		cr.Status.Created = true
-		_, cr.Status.RDSInstanceStatus = lib.DBInstanceExists(
-			lib.RDSGenerics{RDSClient: r.rdsClient,
+		_, cr.Status.RDSInstanceStatus = utils.DBInstanceExists(
+			utils.RDSGenerics{RDSClient: r.rdsClient,
 				ClusterID: getInstanceID(cr)})
 		spew.Dump(cr.Status)
-		return lib.UpdateCrStatus(r.client, cr)
+		return utils.UpdateCrStatus(r.client, cr)
 	}
 	return nil
 }

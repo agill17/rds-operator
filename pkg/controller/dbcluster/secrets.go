@@ -6,7 +6,7 @@ import (
 	"github.com/agill17/rds-operator/pkg/rdsLib"
 
 	kubev1alpha1 "github.com/agill17/rds-operator/pkg/apis/agill/v1alpha1"
-	"github.com/agill17/rds-operator/pkg/lib"
+	"github.com/agill17/rds-operator/pkg/utils"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -142,7 +142,7 @@ func setSecretStatusInCR(cr *kubev1alpha1.DBCluster, client client.Client, secre
 func setUserKeyInStatus(userKey string, cr *kubev1alpha1.DBCluster, client client.Client) error {
 	if cr.Status.UsernameKey != userKey {
 		cr.Status.UsernameKey = userKey
-		return lib.UpdateCrStatus(client, cr)
+		return utils.UpdateCrStatus(client, cr)
 	}
 	return nil
 }
@@ -150,7 +150,7 @@ func setUserKeyInStatus(userKey string, cr *kubev1alpha1.DBCluster, client clien
 func setPassKeyInStatus(passKey string, cr *kubev1alpha1.DBCluster, client client.Client) error {
 	if cr.Status.PasswordKey != passKey {
 		cr.Status.PasswordKey = passKey
-		return lib.UpdateCrStatus(client, cr)
+		return utils.UpdateCrStatus(client, cr)
 	}
 	return nil
 }
@@ -158,7 +158,7 @@ func setPassKeyInStatus(passKey string, cr *kubev1alpha1.DBCluster, client clien
 func setSecretNameInStatus(secretName string, cr *kubev1alpha1.DBCluster, client client.Client) error {
 	if cr.Status.SecretName != secretName {
 		cr.Status.SecretName = secretName
-		return lib.UpdateCrStatus(client, cr)
+		return utils.UpdateCrStatus(client, cr)
 	}
 	return nil
 }

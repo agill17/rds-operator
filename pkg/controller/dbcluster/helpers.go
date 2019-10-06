@@ -1,7 +1,7 @@
 package dbcluster
 
 import (
-	"github.com/agill17/rds-operator/pkg/lib"
+	"github.com/agill17/rds-operator/pkg/utils"
 	"github.com/agill17/rds-operator/pkg/rdsLib"
 	"github.com/davecgh/go-spew/spew"
 
@@ -9,7 +9,7 @@ import (
 )
 
 
-func getActionType(cr *kubev1alpha1.DBCluster) rdsLib.RDSAction {
+func (r *ReconcileDBCluster)getActionType(cr *kubev1alpha1.DBCluster) rdsLib.RDSAction {
 	if cr.GetDeletionTimestamp() != nil && len(cr.GetFinalizers()) > 0 {
 		return rdsLib.DELETE
 	} else if cr.ClusterSpec.SnapshotIdentifier != nil {
@@ -36,12 +36,12 @@ func (r *ReconcileDBCluster) updateClusterStatusInCr(cr *kubev1alpha1.DBCluster)
 	var err error
 	if !cr.Status.Created {
 		cr.Status.Created = true
-		_, cr.Status.DescriberClusterOutput, err = lib.DbClusterExists(lib.RDSGenerics{RDSClient: r.rdsClient, ClusterID: getDBClusterID(cr)})
+		_, cr.Status.DescriberClusterOutput, err = utils.DbClusterExists(utils.RDSGenerics{RDSClient: r.rdsClient, ClusterID: getDBClusterID(cr)})
 		if err != nil {
 			return err
 		}
 		spew.Dump(cr.Status)
-		return lib.UpdateCrStatus(r.client, cr)
+		return utils.UpdateCrStatus(r.client, cr)
 	}
 	return nil
 }

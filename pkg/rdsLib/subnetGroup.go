@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/agill17/rds-operator/pkg/apis/agill/v1alpha1"
-	"github.com/agill17/rds-operator/pkg/lib"
+	"github.com/agill17/rds-operator/pkg/utils"
 	"github.com/aws/aws-sdk-go/service/rds"
 	"github.com/sirupsen/logrus"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -30,7 +30,7 @@ func NewSubnetGroup(createIn *rds.CreateDBSubnetGroupInput, deleteIn *rds.Delete
 }
 
 func (s *subnetGroup) Create() error {
-	exists, _ := lib.DBSubnetGroupExists(lib.RDSGenerics{SubnetGroupName: *s.createIn.DBSubnetGroupName, RDSClient: s.rdsClient})
+	exists, _ := utils.DBSubnetGroupExists(utils.RDSGenerics{SubnetGroupName: *s.createIn.DBSubnetGroupName, RDSClient: s.rdsClient})
 	if !exists {
 		logrus.Infof("Creating DBSubnetGroup for namespace: %v", s.runtimeObj.Namespace)
 		if _, err := s.rdsClient.CreateDBSubnetGroup(s.createIn); err != nil {
@@ -42,24 +42,27 @@ func (s *subnetGroup) Create() error {
 }
 
 func (s *subnetGroup) Delete() error {
-	exists, _ := lib.DBSubnetGroupExists(lib.RDSGenerics{SubnetGroupName: *s.createIn.DBSubnetGroupName, RDSClient: s.rdsClient})
+	exists, _ := utils.DBSubnetGroupExists(utils.RDSGenerics{SubnetGroupName: *s.createIn.DBSubnetGroupName, RDSClient: s.rdsClient})
 	if exists {
 		logrus.Infof("Deleting DBSubnetGroup for namespace: %v", s.runtimeObj.Namespace)
 		if _, err := s.rdsClient.DeleteDBSubnetGroup(s.deleteIn); err != nil {
 			logrus.Errorf("Something went wrong while deleting db subnet group name: %v", err)
 			return err
 		}
-		return lib.RemoveFinalizer(s.runtimeObj, s.k8sClient, lib.DBSubnetGroupFinalizer)
+		return utils.RemoveFinalizer(s.runtimeObj, s.k8sClient, utils.DBSubnetGroupFinalizer)
 	}
 	return nil
 }
 
+// restore for subnetGroup means create a new one with the same parameters
 func (s *subnetGroup) Restore() error {
 	return s.Create()
 }
 
+
+
 func (s *subnetGroup) SyncAwsStatusWithCRStatus() (string, error) {
-	exists, out := lib.DBSubnetGroupExists(lib.RDSGenerics{RDSClient: s.rdsClient, SubnetGroupName: *s.createIn.DBSubnetGroupName})
+	exists, out := utils.DBSubnetGroupExists(utils.RDSGenerics{RDSClient: s.rdsClient, SubnetGroupName: *s.createIn.DBSubnetGroupName})
 	currentLocalPhase := s.runtimeObj.Status.CurrentPhase
 	if exists {
 		logrus.Infof("DBCluster CR: %v | Namespace: %v | Current phase in AWS: %v", s.runtimeObj.Name, s.runtimeObj.Namespace, *out.DBSubnetGroups[0].SubnetGroupStatus)
@@ -67,7 +70,7 @@ func (s *subnetGroup) SyncAwsStatusWithCRStatus() (string, error) {
 		if currentLocalPhase != strings.ToLower(*out.DBSubnetGroups[0].SubnetGroupStatus) {
 			logrus.Warnf("Updating current phase in CR for namespace: %v", s.runtimeObj.Namespace)
 			s.runtimeObj.Status.CurrentPhase = strings.ToLower(*out.DBSubnetGroups[0].SubnetGroupStatus)
-			if err := lib.UpdateCrStatus(s.k8sClient, s.runtimeObj); err != nil {
+			if err := utils.UpdateCrStatus(s.k8sClient, s.runtimeObj); err != nil {
 				return "", err
 			}
 		}

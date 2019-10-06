@@ -8,7 +8,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	kubev1alpha1 "github.com/agill17/rds-operator/pkg/apis/agill/v1alpha1"
-	"github.com/agill17/rds-operator/pkg/lib"
+	"github.com/agill17/rds-operator/pkg/utils"
 	"github.com/aws/aws-sdk-go/service/rds"
 	"github.com/sirupsen/logrus"
 )
@@ -40,15 +40,15 @@ func NewInstance(rdsClient *rds.RDS,
 
 // Create Instance
 func (i *instance) Create() error {
-	exists, _ := lib.DBInstanceExists(lib.RDSGenerics{RDSClient: i.rdsClient, InstanceID: i.instanceID})
+	exists, _ := utils.DBInstanceExists(utils.RDSGenerics{RDSClient: i.rdsClient, InstanceID: i.instanceID})
 	if !exists {
 
 		// if instance is part of cluster, check cluster existence before
 		partOfCluster := i.createIn.DBClusterIdentifier != nil
 		if partOfCluster {
-			clusterExists, _ , _:= lib.DbClusterExists(lib.RDSGenerics{RDSClient: i.rdsClient, ClusterID: *i.createIn.DBClusterIdentifier})
+			clusterExists, _ , _:= utils.DbClusterExists(utils.RDSGenerics{RDSClient: i.rdsClient, ClusterID: *i.createIn.DBClusterIdentifier})
 			if !clusterExists {
-				return lib.ErrorResourceCreatingInProgress{Message: "ClusterForDBInstanceNotFoundError"}
+				return utils.ErrorResourceCreatingInProgress{Message: "ClusterForDBInstanceNotFoundError"}
 			}
 		}
 
@@ -62,21 +62,21 @@ func (i *instance) Create() error {
 
 // Delete Instance
 func (i *instance) Delete() error {
-	exists, _ := lib.DBInstanceExists(lib.RDSGenerics{RDSClient: i.rdsClient, InstanceID: i.instanceID})
+	exists, _ := utils.DBInstanceExists(utils.RDSGenerics{RDSClient: i.rdsClient, InstanceID: i.instanceID})
 	if exists {
 		if _, err := i.rdsClient.DeleteDBInstance(i.deleteIn); err != nil {
 			logrus.Errorf("Failed to delete DB Instance: %v", err)
 			return err
 		}
-		return lib.RemoveFinalizer(i.runtimeObj, i.k8sClient, lib.DBInstanceFinalizer)
+		return utils.RemoveFinalizer(i.runtimeObj, i.k8sClient, utils.DBInstanceFinalizer)
 	}
 	return nil
 }
 
-// Restore Instance
+// Restore Instance from a snapshot
 func (i *instance) Restore() error {
-	exists, _ := lib.DBInstanceExists(lib.RDSGenerics{RDSClient: i.rdsClient, InstanceID: i.instanceID})
-	if !exists {
+	exists, _ := utils.DBInstanceExists(utils.RDSGenerics{RDSClient: i.rdsClient, InstanceID: i.instanceID})
+	if !exists && !strings.Contains(*i.restoreFromSnapIn.Engine, "aurora-") && i.restoreFromSnapIn.DBSnapshotIdentifier != nil {
 		if _, err := i.rdsClient.RestoreDBInstanceFromDBSnapshot(i.restoreFromSnapIn); err != nil {
 			logrus.Errorf("Failed to restore DB cluster from snapshot :%v", err)
 			return err
@@ -85,10 +85,11 @@ func (i *instance) Restore() error {
 	return nil
 }
 
+
 // SyncAwsStatusWithCRStatus returns resource state in aws
 func (i *instance) SyncAwsStatusWithCRStatus() (string, error) {
 
-	exists, out := lib.DBInstanceExists(lib.RDSGenerics{RDSClient: i.rdsClient, InstanceID: i.instanceID})
+	exists, out := utils.DBInstanceExists(utils.RDSGenerics{RDSClient: i.rdsClient, InstanceID: i.instanceID})
 	currentLocalPhase := i.runtimeObj.Status.CurrentPhase
 
 	if exists {
@@ -98,7 +99,7 @@ func (i *instance) SyncAwsStatusWithCRStatus() (string, error) {
 		if currentLocalPhase != strings.ToLower(*out.DBInstances[0].DBInstanceStatus) {
 			logrus.Warnf("Updating current phase in CR for namespace: %v", i.runtimeObj.Namespace)
 			i.runtimeObj.Status.CurrentPhase = strings.ToLower(*out.DBInstances[0].DBInstanceStatus)
-			if err := lib.UpdateCrStatus(i.k8sClient, i.runtimeObj); err != nil {
+			if err := utils.UpdateCrStatus(i.k8sClient, i.runtimeObj); err != nil {
 				return "", err
 			}
 		}

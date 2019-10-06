@@ -5,7 +5,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/agill17/rds-operator/pkg/lib"
+	"github.com/agill17/rds-operator/pkg/utils"
 
 	"github.com/aws/aws-sdk-go/service/rds"
 
@@ -61,7 +61,7 @@ type ReconcileDBSubnetGroup struct {
 func (r *ReconcileDBSubnetGroup) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 
 	if r.rdsClient == nil {
-		r.rdsClient = lib.GetRDSClient()
+		r.rdsClient = utils.GetRDSClient()
 	}
 
 	// Fetch the DBSubnetGroup cr
@@ -91,7 +91,7 @@ func (r *ReconcileDBSubnetGroup) Reconcile(request reconcile.Request) (reconcile
 
 	// set finalizers if needed
 	if !deletionTimeStampExists && !anyFinalizersExists {
-		if err := lib.AddFinalizer(cr, r.client, lib.DBSubnetGroupFinalizer); err != nil {
+		if err := utils.AddFinalizer(cr, r.client, utils.DBSubnetGroupFinalizer); err != nil {
 			return reconcile.Result{}, err
 		}
 	}
@@ -103,7 +103,7 @@ func (r *ReconcileDBSubnetGroup) Reconcile(request reconcile.Request) (reconcile
 			return reconcile.Result{}, err
 		}
 		cr.SetFinalizers([]string{})
-		err = lib.UpdateCr(r.client, cr)
+		err = utils.UpdateCr(r.client, cr)
 		if err != nil {
 			return reconcile.Result{}, err
 		}
@@ -111,7 +111,7 @@ func (r *ReconcileDBSubnetGroup) Reconcile(request reconcile.Request) (reconcile
 		return reconcile.Result{}, nil
 	}
 
-	existsInAws, _ := lib.DBSubnetGroupExists(lib.RDSGenerics{RDSClient: r.rdsClient, SubnetGroupName: *cr.Spec.DBSubnetGroupName})
+	existsInAws, _ := utils.DBSubnetGroupExists(utils.RDSGenerics{RDSClient: r.rdsClient, SubnetGroupName: *cr.Spec.DBSubnetGroupName})
 	statusMarkedDeployed := cr.Status.Created
 	if (!statusMarkedDeployed && !existsInAws) || (!existsInAws && statusMarkedDeployed) {
 		logrus.Infof("Creating DBSubnetGroup %v for namespace: %v", cr.Name, cr.Namespace)

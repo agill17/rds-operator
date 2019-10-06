@@ -1,4 +1,4 @@
-package lib
+package utils
 
 type ClusterInstallType string
 

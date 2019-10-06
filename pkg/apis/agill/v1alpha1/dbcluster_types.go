@@ -1,8 +1,6 @@
 package v1alpha1
 
 import (
-	"github.com/aws/aws-sdk-go/service/rds"
-	"k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -13,7 +11,7 @@ type DBClusterStatus struct {
 	UsernameKey              string                        `json:"usernameKey"`
 	PasswordKey              string                        `json:"passwordKey"`
 	PrimaryInstanceID        string                        `json:"primaryInstanceID"`
-	DescriberClusterOutput   *rds.DescribeDBClustersOutput `json:"describeClusterOutput,omitempty"`
+	//DescriberClusterOutput   *rds.DescribeDBClustersOutput `json:"describeClusterOutput,omitempty"`
 	RestoredFromSnapshotName string                        `json:"restoredFromSnapshotName"`
 	CurrentPhase             string                        `json:"currentPhase"`
 }
@@ -295,7 +293,10 @@ type ClusterSpec struct {
 }
 
 type InitClusterDB struct {
-	Spec *v1.JobSpec `json:"jobSpec,omitempty"`
+	Image            string                        `json:"image,omitempty"`
+	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty"`
+	NodeSelector     map[string]string             `json:"nodeSelector,omitempty"`
+	Command          []string                      `json:"command,omitempty"`
 }
 
 type CredentialsFrom struct {

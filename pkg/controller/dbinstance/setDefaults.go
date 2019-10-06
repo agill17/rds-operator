@@ -2,7 +2,7 @@ package dbinstance
 
 import (
 	kubev1alpha1 "github.com/agill17/rds-operator/pkg/apis/agill/v1alpha1"
-	"github.com/agill17/rds-operator/pkg/lib"
+	"github.com/agill17/rds-operator/pkg/utils"
 	"github.com/agill17/rds-operator/pkg/rdsLib"
 	"github.com/sirupsen/logrus"
 )
@@ -10,9 +10,9 @@ import (
 func (r *ReconcileDBInstance) setUsername(cr *kubev1alpha1.DBInstance) error {
 	if cr.Spec.CreateInstanceSpec.MasterUsername == nil {
 		// meaning this is a standalone deployment
-		u := lib.RandStringBytes(9)
+		u := utils.RandStringBytes(9)
 		cr.Spec.CreateInstanceSpec.MasterUsername = &u
-		if err := lib.UpdateCr(r.client, cr); err != nil {
+		if err := utils.UpdateCr(r.client, cr); err != nil {
 			logrus.Errorf("Failed to update DBInstance CR while setting up username: %v", err)
 			return err
 		}
@@ -23,7 +23,7 @@ func (r *ReconcileDBInstance) setUsername(cr *kubev1alpha1.DBInstance) error {
 func (r *ReconcileDBInstance) setRegion(cr *kubev1alpha1.DBInstance) error {
 	if cr.Spec.Region == "" {
 		cr.Spec.Region = "us-east-1"
-		if err := lib.UpdateCr(r.client, cr); err != nil {
+		if err := utils.UpdateCr(r.client, cr); err != nil {
 			logrus.Errorf("Failed to update DBInstance CR while setting up password: %v", err)
 			return err
 		}
@@ -34,9 +34,9 @@ func (r *ReconcileDBInstance) setRegion(cr *kubev1alpha1.DBInstance) error {
 func (r *ReconcileDBInstance) setPassword(cr *kubev1alpha1.DBInstance) error {
 	if cr.Spec.CreateInstanceSpec.MasterUserPassword == nil {
 		// meaning this is a standalone deployment
-		u := lib.RandStringBytes(9)
+		u := utils.RandStringBytes(9)
 		cr.Spec.CreateInstanceSpec.MasterUserPassword = &u
-		if err := lib.UpdateCr(r.client, cr); err != nil {
+		if err := utils.UpdateCr(r.client, cr); err != nil {
 			logrus.Errorf("Failed to update DBInstance CR while setting up password: %v", err)
 			return err
 		}
@@ -53,11 +53,11 @@ func (r *ReconcileDBInstance) setDeleteInsID(cr *kubev1alpha1.DBInstance, action
 		cr.Spec.DeleteInstanceSpec.DBInstanceIdentifier = cr.Spec.RestoreInstanceFromSnap.DBInstanceIdentifier
 	}
 
-	if err := lib.UpdateCrStatus(r.client, cr); err != nil {
+	if err := utils.UpdateCrStatus(r.client, cr); err != nil {
 		return err
 	}
 
-	return lib.UpdateCr(r.client, cr)
+	return utils.UpdateCr(r.client, cr)
 }
 
 // only used when instance is not associated to cluster

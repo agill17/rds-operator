@@ -6,7 +6,7 @@ import (
 	"github.com/agill17/rds-operator/pkg/rdsLib"
 
 	kubev1alpha1 "github.com/agill17/rds-operator/pkg/apis/agill/v1alpha1"
-	"github.com/agill17/rds-operator/pkg/lib"
+	"github.com/agill17/rds-operator/pkg/utils"
 	"github.com/aws/aws-sdk-go/service/rds"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -86,7 +86,7 @@ func (r *ReconcileDBInstance) Reconcile(request reconcile.Request) (reconcile.Re
 	}
 
 	// set up rds client
-	r.rdsClient = lib.GetRDSClient()
+	r.rdsClient = utils.GetRDSClient()
 
 	// set up finalizers
 	currentFinalizers := cr.GetFinalizers()
@@ -95,7 +95,7 @@ func (r *ReconcileDBInstance) Reconcile(request reconcile.Request) (reconcile.Re
 
 	// add finalizers
 	if !deletionTimeExists && !anyFinalizersExists {
-		if err := lib.AddFinalizer(cr, r.client, lib.DBInstanceFinalizer); err != nil {
+		if err := utils.AddFinalizer(cr, r.client, utils.DBInstanceFinalizer); err != nil {
 			return reconcile.Result{}, err
 		}
 	}
@@ -112,7 +112,7 @@ func (r *ReconcileDBInstance) Reconcile(request reconcile.Request) (reconcile.Re
 	// call the crud func
 	if err := rdsLib.Crud(insObj, actionType, cr.Status.Created, r.client); err != nil {
 		switch err.(type) {
-		case lib.ErrorResourceCreatingInProgress:
+		case utils.ErrorResourceCreatingInProgress:
 			logrus.Warnf("Namespace: %v | CR: %v | Msg: %v", cr.Namespace, cr.Name, err)
 			return reconcile.Result{Requeue: true}, nil
 		default:

@@ -1,7 +1,6 @@
 package v1alpha1
 
 import (
-	"github.com/aws/aws-sdk-go/service/rds"
 	"github.com/jinzhu/copier"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -14,9 +13,9 @@ type DBInstanceSpec struct {
 	Region                  string                                    `json:"region"`
 	InstanceSecretName      string                                    `json:"instanceSecretName,omitempty"`
 	ServiceName             string                                    `json:"serviceName,omitempty"`
-	CreateInstanceSpec      *rds.CreateDBInstanceInput                `json:"createInstanceSpec,omitempty"`
-	RestoreInstanceFromSnap *rds.RestoreDBInstanceFromDBSnapshotInput `json:"createInstanceFromSnapshot,omitempty"`
-	DeleteInstanceSpec      *rds.DeleteDBInstanceInput                `json:"deleteInstanceSpec,required"`
+	//CreateInstanceSpec      *rds.CreateDBInstanceInput                `json:"createInstanceSpec,omitempty"`
+	//RestoreInstanceFromSnap *rds.RestoreDBInstanceFromDBSnapshotInput `json:"createInstanceFromSnapshot,omitempty"`
+	//DeleteInstanceSpec      *rds.DeleteDBInstanceInput                `json:"deleteInstanceSpec,required"`
 }
 
 /*
@@ -44,7 +43,7 @@ type DBInstanceSpec struct {
 // DBInstanceStatus defines the observed state of DBInstance
 type DBInstanceStatus struct {
 	DBClusterMarkedAvail     bool                           `json:"dbClusterMarkedAvail"`
-	RDSInstanceStatus        *rds.DescribeDBInstancesOutput `json:"rdsInstanceStatus"`
+	//RDSInstanceStatus        *rds.DescribeDBInstancesOutput `json:"rdsInstanceStatus"`
 	Created                  bool                           `json:"created"`
 	RestoredFromSnapshotName string                         `json:"restoredFromSnapshotName"`
 	InitJobTimedOut          bool                           `json:"initJobTimedOut"`

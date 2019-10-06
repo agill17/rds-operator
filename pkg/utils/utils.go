@@ -1,4 +1,4 @@
-package lib
+package utils
 
 import (
 	"context"
@@ -27,7 +27,7 @@ func RandStringBytes(n int) string {
 // UpdateCr is used to update CR spec ( not status ), things like adding/removing finalizers, spec updates
 func UpdateCr(client client.Client, object runtime.Object) error {
 	if err := client.Update(context.TODO(), object); err != nil {
-		logrus.Errorf("Failed to update CR obejct: ~~> %v", err)
+		logrus.Errorf("Failed to update CR object: ~~> %v", err)
 		return err
 	}
 	return nil
@@ -36,7 +36,7 @@ func UpdateCr(client client.Client, object runtime.Object) error {
 // UpdateCrStatus is only used for updating status subresource in a CR object
 func UpdateCrStatus(client client.Client, object runtime.Object) error {
 	if err := client.Status().Update(context.TODO(), object); err != nil {
-		logrus.Errorf("Failed to update status for CR obejct: ~~> %v", err)
+		logrus.Errorf("Failed to update status for CR object: ~~> %v", err)
 		return err
 	}
 	return nil

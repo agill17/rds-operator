@@ -9,7 +9,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/service/rds"
 
-	"github.com/agill17/rds-operator/pkg/lib"
+	"github.com/agill17/rds-operator/pkg/utils"
 
 	kubev1alpha1 "github.com/agill17/rds-operator/pkg/apis/agill/v1alpha1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -63,7 +63,7 @@ func (r *ReconcileDBCluster) Reconcile(request reconcile.Request) (reconcile.Res
 
 	// set up rds client
 	if r.rdsClient == nil {
-		r.rdsClient = lib.GetRDSClient()
+		r.rdsClient = utils.GetRDSClient()
 	}
 
 	// Fetch the DBCluster cr
@@ -80,7 +80,10 @@ func (r *ReconcileDBCluster) Reconcile(request reconcile.Request) (reconcile.Res
 	// get action type ( ALWAYS )
 	// actionType changes between create/restore and delete
 	// actionType will be delete when its time to delete rds cluster
-	actionType := getActionType(cr)
+	actionType := r.getActionType(cr)
+	var createIn *rds.CreateDBClusterInput
+	var restoreIn *rds.RestoreDBClusterFromSnapshotInput
+	var deleteIn *rds.DeleteDBClusterInput
 
 	// set up finalizers
 	zeroFinalizers := len(cr.GetFinalizers()) == 0
@@ -88,7 +91,25 @@ func (r *ReconcileDBCluster) Reconcile(request reconcile.Request) (reconcile.Res
 
 	// add finalizers
 	if !deletionTimeExists && zeroFinalizers {
-		if err := lib.AddFinalizer(cr, r.client, lib.DBClusterFinalizer); err != nil {
+		if err := utils.AddFinalizer(cr, r.client, utils.DBClusterFinalizer); err != nil {
+			return reconcile.Result{}, err
+		}
+	}
+
+	// setup rds inputs for appropriate actions
+	switch actionType {
+	case rdsLib.CREATE:
+		createIn, err = createClusterInput(cr)
+		if err != nil {
+			logrus.Errorf("Failed to construct createInput for dbCluster: %v", err)
+			return reconcile.Result{}, err
+		}
+	case rdsLib.DELETE:
+		deleteIn = deleteClusterInput(cr)
+	case rdsLib.RESTORE:
+		restoreIn, err = restoreFromSnapshotInput(cr)
+		if err != nil {
+			logrus.Errorf("Failed to construct restoreInput for dbCluster: %v", err)
 			return reconcile.Result{}, err
 		}
 	}
@@ -102,23 +123,16 @@ func (r *ReconcileDBCluster) Reconcile(request reconcile.Request) (reconcile.Res
 		}
 	}
 
-	// setup create/restore rds inputs and reconcile if any errors
-	createIn , err := createClusterInput(cr)
-	if err != nil {
-		logrus.Errorf("Failed to construct createInput for dbCluster: %v", err)
-		return reconcile.Result{}, err
-	}
-	restoreIn , err := restoreFromSnapshotInput(cr)
-	if err != nil {
-		logrus.Errorf("Failed to construct restoreInput for dbCluster: %v", err)
-		return reconcile.Result{}, err
-	}
 
 
 	clusterObj := rdsLib.NewCluster(r.rdsClient,
 		createIn,
-		deleteClusterInput(cr),
-		restoreIn, cr, r.client, getDBClusterID(cr))
+		deleteIn,
+		restoreIn,
+		cr,
+		r.client,
+		getDBClusterID(cr))
+
 
 	if err := rdsLib.Crud(clusterObj, actionType, cr.Status.Created, r.client); err != nil {
 
@@ -132,7 +146,7 @@ func (r *ReconcileDBCluster) Reconcile(request reconcile.Request) (reconcile.Res
 
 			// when aws resource is still creating in progress, we throw ErrorResourceCreatingInProgress
 			// catch it and requeue
-		} else if err, ok := err.(lib.ErrorResourceCreatingInProgress); ok {
+		} else if err, ok := err.(utils.ErrorResourceCreatingInProgress); ok {
 			logrus.Warnf("Namespace: %v | CR: %v | Msg: %v", cr.Namespace, cr.Name, err)
 			return reconcile.Result{Requeue: true}, nil
 

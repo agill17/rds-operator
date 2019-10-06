@@ -1,4 +1,7 @@
-FROM registry.access.redhat.com/ubi7-dev-preview/ubi-minimal:7.6
+FROM alpine:3.8
+RUN apk --update upgrade && apk add ca-certificates
+RUN apk -v --update add python py-pip jq \
+    && pip install awscli
 
 ENV OPERATOR=/usr/local/bin/rds-operator \
     USER_UID=1001 \

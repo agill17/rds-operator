@@ -17,7 +17,7 @@ spec:
       serviceAccountName: rds-operator
       containers:
       - name: rds-operator
-        image: agill17/rds-operator:0.4.2
+        image: agill17/rds-operator:0.5.0
         ports:
         - containerPort: 8383
           name: metrics

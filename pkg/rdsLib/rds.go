@@ -5,7 +5,7 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/agill17/rds-operator/pkg/lib"
+	"github.com/agill17/rds-operator/pkg/utils"
 )
 
 type RDSAction string
@@ -15,6 +15,7 @@ const (
 	RESTORE RDSAction = "restoreFromSnapshot"
 	DELETE  RDSAction = "delete"
 	UNKNOWN RDSAction = "unknown"
+	RECOVER RDSAction = "recoverWhenDeleted"
 )
 
 type RDS interface {
@@ -49,9 +50,9 @@ func AWSPhaseHandler(rds RDS) error {
 	case "available":
 		return nil
 	case "creating", "backing-up", "restoring", "modifying":
-		return lib.ErrorResourceCreatingInProgress{Message: msgPrefix + "CreatingInProgress"}
+		return utils.ErrorResourceCreatingInProgress{Message: msgPrefix + "CreatingInProgress"}
 	case "deleting":
-		return lib.ErrorResourceDeletingInProgress{Message: msgPrefix + "DeletingInProgress"}
+		return utils.ErrorResourceDeletingInProgress{Message: msgPrefix + "DeletingInProgress"}
 	case "":
 		return errors.New(msgPrefix + "NotYetInitilaized")
 	}
@@ -66,36 +67,30 @@ func Crud(rdsObject RDS, actionType RDSAction, crStatusCreated bool, client clie
 	// fresh install
 	case CREATE:
 
-		if !crStatusCreated {
-			if err := rdsObject.Create(); err != nil {
-				return err
-			}
+		if err := rdsObject.Create(); err != nil {
+			return err
 		}
 
-	// delete event
+		// delete event
 	case DELETE:
 		err := rdsObject.Delete()
 		if err != nil {
 			return err
 		}
 
-	// restore ( means different for each object )
+		// restore ( means different for each object )
 	case RESTORE:
-
-		if !crStatusCreated {
-			if err := rdsObject.Restore(); err != nil {
-				return err
-			}
-		}
-
-	}
-
-	if !crStatusCreated {
-		// return err if not ready in AWS yet
-		if err := AWSPhaseHandler(rdsObject); err != nil {
+		if err := rdsObject.Restore(); err != nil {
 			return err
 		}
+
 	}
+
+	// return err if not ready in AWS yet
+	if err := AWSPhaseHandler(rdsObject); err != nil {
+		return err
+	}
+
 
 	return nil
 }
